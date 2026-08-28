@@ -96,15 +96,50 @@ Digest:
   sha256:4f758f4a513622ceb1fe5778b147b17233eabb68224baf0263aa4c64dbb69110
 ```
 
-Current runtime status:
+The next GitHub commit triggered an automatic ACR run, proving the webhook path:
 
 ```text
-ACR candidate image exists.
-Foundry Docker-backed agents have not yet been manually promoted to phase22-ch7.
+Automatic run:
+  ch8
+
+Trigger:
+  GitHub commit on main
+
+Git commit:
+  fc141eabc2378136b586acadbd89942b1851b020
+
+Images pushed:
+  mazefoundryacrpravada483.azurecr.io/maze-role-agent:phase22-latest
+  mazefoundryacrpravada483.azurecr.io/maze-role-agent:phase22-ch8
+
+Digest:
+  sha256:742677f9cf04edbdf16afa425fb0ae49d8fad0c204e9b7f412ef17147ed1fce7
 ```
 
-To promote the candidate image to the Docker-backed Foundry agents:
+The manual promotion command then promoted `phase22-ch8` to all three
+Docker-backed Foundry hosted agents:
 
-```bash
+```text
+Command:
+  python3 scripts/phase22_acr_task_build_trigger.py --promote-latest-run
+
+Promoted image:
+  mazefoundryacrpravada483.azurecr.io/maze-role-agent:phase22-ch8
+
+Deployed agents:
+  maze-analyst-agent-docker
+  maze-worker-agent-a-docker
+  maze-worker-agent-b-docker
+
+Deployment result:
+  all three agents deployed successfully
+
+Active Docker-backed agent version:
+  version 3
+```
+
+Future manual promotion still uses the same command:
+
+```text
 python3 scripts/phase22_acr_task_build_trigger.py --promote-latest-run
 ```

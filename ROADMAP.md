@@ -62,9 +62,9 @@ image so Foundry runs a prebuilt container instead of source remote_build.
 Phase 21 moves the ACR build source from the local folder to GitHub so the image
 runtime can be rebuilt from a public repo branch, tag, or commit.
 Phase 22 adds and validates a GitHub-triggered ACR Task so pushes create
-candidate images automatically. Manual run `ch7` produced
-`maze-role-agent:phase22-ch7`; Foundry promotion remains an explicit manual
-step.
+candidate images automatically. Manual run `ch7` proved the task, automatic run
+`ch8` proved the GitHub webhook path, and the Docker-backed Foundry agents were
+manually promoted to `maze-role-agent:phase22-ch8`.
 ```
 
 ## Phase Intent
