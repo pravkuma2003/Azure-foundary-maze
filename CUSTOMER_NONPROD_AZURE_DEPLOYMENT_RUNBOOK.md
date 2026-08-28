@@ -1,29 +1,43 @@
-# Customer Non-Prod Azure Deployment Runbook
+# Personal-to-Lab Azure Redeployment Runbook
 
 ## Purpose
 
-This runbook explains how to duplicate the current Maze Foundry learning app
-from the personal Azure subscription into a customer non-prod Azure tenant.
+This runbook explains how to redeploy the current working Maze Foundry learning
+app from the personal Azure subscription into a Lab Azure tenant or customer
+non-prod Azure tenant.
 
-The target state is a separate customer-owned Azure environment with its own:
+The intent is not to redesign the app. The intent is:
 
 ```text
-customer Azure tenant
-customer non-prod subscription
-customer resource group
-customer Azure AI Foundry account and project
-customer model deployment
-customer Foundry-hosted Analyst and Worker agents
-customer Maze Tool Function App
-customer WebUI Function App
-customer storage accounts
-customer App Insights and Log Analytics workspace
-customer RBAC assignments
+Inventory the known-good Personal deployment.
+Reuse the same source code and architecture.
+Substitute only tenant, subscription, naming, endpoint, identity, and quota values.
+Bring up an equivalent working Lab app.
+```
+
+The target state is a separate Lab/customer-owned Azure environment with its own:
+
+```text
+Lab/customer Azure tenant
+Lab/customer non-prod subscription
+Lab/customer resource group
+Lab/customer Azure AI Foundry account and project
+Lab/customer model deployment
+Lab/customer Foundry-hosted Analyst and Worker agents
+Lab/customer Maze Tool Function App
+Lab/customer WebUI Function App
+Lab/customer storage accounts
+Lab/customer App Insights and Log Analytics workspace
+Lab/customer RBAC assignments
 ```
 
 The goal is not to connect the customer tenant back to the personal lab. The
 goal is to reuse the working source code and recreate the architecture in the
 customer tenant with no changes or very small configuration-only changes.
+
+GitHub Copilot or another coding agent should treat this document as a
+redeployment playbook. Its job is to copy the working design into the target Lab
+environment, not to independently modernize or re-architect the solution.
 
 ## Package Status
 
@@ -45,6 +59,46 @@ Do not treat an unmodified local lab script as customer-ready until it has been
 checked for personal-lab names and endpoints. The source code is portable; some
 deployment scripts still need customer parameters applied before a clean-tenant
 deployment.
+
+Primary rule for Copilot/operator:
+
+```text
+Preserve behavior first. Parameterize names and endpoints second. Modernize only
+when the Lab environment requires it.
+```
+
+Do not change these unless there is a concrete target-tenant blocker:
+
+```text
+agent code
+prompts
+Pydantic AI role logic
+Analyst/Worker startup commands
+Maze Tool inspect/move behavior
+WebUI playback behavior
+parallel worker tick behavior
+Team Memory blob behavior
+thumbs feedback schema
+model deployment name, if the target tenant can support it
+```
+
+Change these for the Lab deployment:
+
+```text
+tenant ID
+subscription ID
+resource group
+region if quota/policy differs
+Foundry account name
+Foundry project name and endpoint
+Function App names
+storage account names
+toolbox endpoint
+hosted-agent endpoints
+managed identity principal IDs
+function key / Foundry connection secret
+App Insights / LAW names unless reusing existing Lab monitoring
+```
 
 ## Current Personal Lab Baseline
 
@@ -78,6 +132,160 @@ scripts/
 The important point: the role-agent code, Maze Tool code, and WebUI code should
 stay mostly the same. Tenant-specific values should move into deployment
 parameters and Azure app settings.
+
+## Extract the Known-Good Personal Deployment
+
+Before deploying into Lab, capture the current Personal deployment. This makes
+the Lab build a controlled redeployment instead of a fresh design exercise.
+
+Set Personal baseline variables:
+
+```bash
+export PERSONAL_SUBSCRIPTION_ID="0ecda5cf-8c20-4818-856e-0acac9ce9aa9"
+export PERSONAL_RESOURCE_GROUP="rg-maze-foundry-lab"
+export PERSONAL_FOUNDRY_ACCOUNT="maze-foundry-prav-ada483"
+export PERSONAL_FOUNDRY_PROJECT="maze-migration-lab"
+export PERSONAL_MODEL_DEPLOYMENT="gpt41mini-maze"
+export PERSONAL_WEBUI_FUNCTION_APP="maze-webui-func-prav-ada483"
+export PERSONAL_TOOL_FUNCTION_APP="maze-tool-func-prav-ada483"
+```
+
+Login/select the Personal subscription only while extracting the baseline:
+
+```bash
+az account set --subscription "$PERSONAL_SUBSCRIPTION_ID"
+az account show --query "{tenantId:tenantId, subscriptionId:id, name:name}" --output table
+```
+
+Create a local baseline folder that is not committed:
+
+```bash
+mkdir -p .deployment-baseline/personal
+```
+
+Capture Foundry account:
+
+```bash
+az cognitiveservices account show \
+  --name "$PERSONAL_FOUNDRY_ACCOUNT" \
+  --resource-group "$PERSONAL_RESOURCE_GROUP" \
+  --output json \
+  > .deployment-baseline/personal/foundry-account.json
+```
+
+Capture Foundry project:
+
+```bash
+PERSONAL_PROJECT_ARM_ID="/subscriptions/$PERSONAL_SUBSCRIPTION_ID/resourceGroups/$PERSONAL_RESOURCE_GROUP/providers/Microsoft.CognitiveServices/accounts/$PERSONAL_FOUNDRY_ACCOUNT/projects/$PERSONAL_FOUNDRY_PROJECT"
+
+az rest \
+  --method get \
+  --uri "https://management.azure.com${PERSONAL_PROJECT_ARM_ID}?api-version=2025-04-01-preview" \
+  --output json \
+  > .deployment-baseline/personal/foundry-project.json
+```
+
+Capture model deployment:
+
+```bash
+az cognitiveservices account deployment show \
+  --name "$PERSONAL_FOUNDRY_ACCOUNT" \
+  --resource-group "$PERSONAL_RESOURCE_GROUP" \
+  --deployment-name "$PERSONAL_MODEL_DEPLOYMENT" \
+  --output json \
+  > .deployment-baseline/personal/model-deployment.json
+```
+
+Capture WebUI Function configuration and settings:
+
+```bash
+az functionapp config show \
+  --resource-group "$PERSONAL_RESOURCE_GROUP" \
+  --name "$PERSONAL_WEBUI_FUNCTION_APP" \
+  --output json \
+  > .deployment-baseline/personal/webui-function-config.json
+
+az functionapp config appsettings list \
+  --resource-group "$PERSONAL_RESOURCE_GROUP" \
+  --name "$PERSONAL_WEBUI_FUNCTION_APP" \
+  --output json \
+  > .deployment-baseline/personal/webui-appsettings.redact-before-sharing.json
+
+az functionapp identity show \
+  --resource-group "$PERSONAL_RESOURCE_GROUP" \
+  --name "$PERSONAL_WEBUI_FUNCTION_APP" \
+  --output json \
+  > .deployment-baseline/personal/webui-identity.json
+```
+
+Capture Maze Tool Function configuration and settings:
+
+```bash
+az functionapp config show \
+  --resource-group "$PERSONAL_RESOURCE_GROUP" \
+  --name "$PERSONAL_TOOL_FUNCTION_APP" \
+  --output json \
+  > .deployment-baseline/personal/tool-function-config.json
+
+az functionapp config appsettings list \
+  --resource-group "$PERSONAL_RESOURCE_GROUP" \
+  --name "$PERSONAL_TOOL_FUNCTION_APP" \
+  --output json \
+  > .deployment-baseline/personal/tool-appsettings.redact-before-sharing.json
+
+az functionapp identity show \
+  --resource-group "$PERSONAL_RESOURCE_GROUP" \
+  --name "$PERSONAL_TOOL_FUNCTION_APP" \
+  --output json \
+  > .deployment-baseline/personal/tool-identity.json
+```
+
+Capture RBAC at the Personal resource group:
+
+```bash
+az role assignment list \
+  --resource-group "$PERSONAL_RESOURCE_GROUP" \
+  --all \
+  --output json \
+  > .deployment-baseline/personal/role-assignments.json
+```
+
+Capture hosted-agent definitions and endpoints:
+
+```bash
+cd hosted/phase13-split-role-agents
+
+azd ai agent show maze-analyst-agent --output json \
+  > ../../.deployment-baseline/personal/maze-analyst-agent.json
+
+azd ai agent show maze-worker-agent-a --output json \
+  > ../../.deployment-baseline/personal/maze-worker-agent-a.json
+
+azd ai agent show maze-worker-agent-b --output json \
+  > ../../.deployment-baseline/personal/maze-worker-agent-b.json
+
+cd ../..
+```
+
+Capture toolbox definition:
+
+```bash
+azd ai toolbox show maze-toolbox-dynamic \
+  --project-endpoint "https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab" \
+  --output json \
+  > .deployment-baseline/personal/maze-toolbox-dynamic.json
+```
+
+Never commit `.deployment-baseline/`. Function app settings can include secrets,
+connection strings, instrumentation keys, and function keys. Use this baseline
+only to compare configuration shape and to identify which values must be
+substituted for Lab.
+
+Add this ignore rule before using the baseline folder:
+
+```bash
+printf "\n.deployment-baseline/\n" >> .gitignore
+```
 
 ## Deployment Package Layers
 
@@ -727,9 +935,11 @@ POST /api/maze/move
 The Maze Tool is deterministic. It validates and applies moves. It does not plan
 or solve the maze for the workers.
 
-Create storage and the Function App. For a new customer deployment, prefer Flex
-Consumption for Linux/Python Functions. Linux Consumption is a legacy option and
-is not the recommended starting point for new customer work.
+Create storage and the Function App. Start by matching the working Personal
+deployment unless the Lab tenant policy requires a different plan. For a new
+Lab-only deployment, Flex Consumption is preferred for Linux/Python Functions;
+classic Linux Consumption should be used only as a documented parity or policy
+exception.
 
 ```bash
 az storage account create \
@@ -749,10 +959,10 @@ az functionapp create \
   --os-type Linux
 ```
 
-If the installed Azure CLI does not support `--flexconsumption-location`, update
-the Azure CLI or have the customer platform team create the Function App on Flex
-Consumption through their approved deployment path. Use classic Linux
-Consumption only as a documented exception.
+If the Personal baseline shows a different working plan and your goal is strict
+Personal-to-Lab parity, reproduce that plan first. If the installed Azure CLI
+does not support `--flexconsumption-location`, update the Azure CLI or have the
+Lab platform team create the Function App through its approved deployment path.
 
 Package and deploy:
 
@@ -1064,8 +1274,10 @@ POST /api/worker-steps
 POST /api/feedback
 ```
 
-Create storage and the Function App. Use Flex Consumption for new deployments
-unless the customer has a specific approved reason to use another plan.
+Create storage and the Function App. Start by matching the working Personal
+deployment unless the Lab tenant policy requires a different plan. For a new
+Lab-only deployment, use Flex Consumption unless the Lab has a specific approved
+reason to use another plan.
 
 ```bash
 az storage account create \
@@ -1130,10 +1342,17 @@ an intentional lifecycle decision.
 
 ## Step 9 - Configure Monitoring
 
-For a low-cost non-prod lab, prefer one shared Application Insights component
+For a low-cost Lab deployment, prefer one shared Application Insights component
 and one Log Analytics workspace.
 
-Create or attach:
+If the target Lab environment already has an approved shared App Insights/LAW
+pair, reuse it. If not, create one new shared pair for both Function Apps.
+
+Do not reuse the Personal subscription's monitoring resources from a separate
+Lab tenant. Reuse means reuse monitoring that already exists inside the target
+Lab tenant/subscription.
+
+Create or attach to the target Lab monitoring resources:
 
 ```bash
 az monitor log-analytics workspace create \
@@ -1468,6 +1687,50 @@ Use this checklist before calling the customer non-prod deployment complete:
 [ ] Exact dependency versions are pinned or recorded after the customer dry run.
 ```
 
+## Personal vs Lab Parity Check
+
+After the Lab app is deployed, compare it against the known-good Personal
+baseline. The point is not that every resource name matches; the point is that
+the architecture, source revision, app behavior, and telemetry behavior match.
+
+```text
+[ ] Same standalone GitHub source revision or documented Lab branch.
+[ ] Same Analyst package and startup command.
+[ ] Same Worker A package and startup command.
+[ ] Same Worker B package and startup command.
+[ ] Same Pydantic AI role logic.
+[ ] Same model family/name/version, unless Lab quota required an approved substitute.
+[ ] Same model deployment name, if practical.
+[ ] Same Maze Tool endpoints: health, openapi, inspect, move.
+[ ] Same toolbox behavior: Foundry toolbox MCP endpoint -> OpenAPI wrapper -> Maze Tool Function.
+[ ] Same toolbox authentication pattern: Foundry connection supplies x-functions-key.
+[ ] Same WebUI API surface: health, mission, worker-step, worker-steps, feedback.
+[ ] Same Team Memory behavior: durable Blob-backed memory with team-memory container.
+[ ] Same worker call budgets and independent per-worker limit behavior.
+[ ] Same parallel worker tick behavior.
+[ ] Same thumbs-up/thumbs-down feedback schema.
+[ ] Same feedback telemetry query works in App Insights/LAW.
+[ ] Same successful end-to-end run: Run Fresh Maze -> Play -> timeline updates -> feedback saved.
+```
+
+Environment-specific differences that are expected:
+
+```text
+tenant ID
+subscription ID
+resource group
+region if Lab quota/policy differs
+Foundry account/project names
+Function App names
+storage account names
+App Insights/LAW names or reused Lab monitoring names
+managed identity principal IDs
+hosted-agent endpoints
+toolbox endpoint
+function key values
+RBAC assignment IDs
+```
+
 ## Cost Controls
 
 Recommended customer non-prod defaults:
@@ -1476,7 +1739,8 @@ Recommended customer non-prod defaults:
 One resource group.
 One Foundry project.
 One small model deployment.
-Flex Consumption Azure Functions unless customer policy requires another plan.
+Same Function plan as Personal for parity, or Flex Consumption for a new
+Lab-only deployment unless customer policy requires another plan.
 One WebUI Function App.
 One Maze Tool Function App.
 One shared Application Insights component.
