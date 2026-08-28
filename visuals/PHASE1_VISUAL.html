@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 1</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --red:#b91c1c; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1200px, calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    p { margin:0; color:var(--muted); }
+    .panel,.summary,article { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); }
+    .summary,.panel { padding:16px; }
+    .summary strong { display:block; font-size:30px; }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    article { padding:14px; box-shadow:none; border-left:5px solid var(--blue); }
+    article span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    article strong { display:block; margin:4px 0; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    li { margin:7px 0; color:var(--muted); }
+    code { color:var(--red); }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    .stack { display:grid; gap:14px; }
+    @media (max-width:900px) { header,.grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 1 - Portability Inventory</h1>
+        <p>Inventory the local maze app before GitHub publishing or Azure Foundry migration.</p>
+      </div>
+      <aside class="summary">
+        <span>Files Scanned</span>
+        <strong>46</strong>
+        <p>60 public-safety findings require review.</p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Azure Migration Map</h2>
+        <div class="grid"><article><span>Pydantic AI Analyst Agent</span><strong>Foundry-hosted agent</strong><p>Keep instructions and output schema stable; swap provider/hosting first.</p></article><article><span>Pydantic AI Worker Agent A/B</span><strong>Foundry-hosted worker agents introduced one at a time</strong><p>Preserve role boundaries while avoiding multiple hosted agents until the lesson needs them.</p></article><article><span>Maze Tool Python functions</span><strong>In-process module first; Azure-hosted tool boundary later</strong><p>Keep the tool contract stable before paying for a separate hosted tool surface.</p></article><article><span>Team Memory in trace/state</span><strong>In-process memory first; Azure-native state later</strong><p>Introduce a memory interface before selecting a paid durable backend.</p></article><article><span>Generated HTML trace</span><strong>Foundry traces plus optional static HTML artifact</strong><p>Keep local HTML for learning while adding Foundry trace correlation.</p></article></div>
+      </section>
+      <section class="panel">
+        <h2>Cost Guardrails</h2>
+        <ul><li>Use one resource group, one Foundry project, and one model deployment at first.</li><li>Deploy one Foundry-hosted agent before introducing multiple hosted agents.</li><li>Keep maze traces short and preserve the 25-call learning budget.</li><li>Prefer source-code hosted-agent deployment before container deployment unless the lesson requires containers.</li><li>Use minimum practical hosted-agent CPU and memory sizing.</li><li>Do not add Azure Functions, Cosmos DB, Storage, or extra monitoring services until a phase explicitly needs that construct.</li><li>Clean up lab resources when they are no longer needed.</li></ul>
+      </section>
+      <section class="panel">
+        <h2>Public Repo Findings</h2>
+        <table>
+          <thead><tr><th>File</th><th>Type</th><th>Line</th><th>Match</th></tr></thead>
+          <tbody><tr><td>README.md</td><td>local_home_path</td><td>60</td><td><code>/home/prav/orb-execute/orb-execute/learn-agent/multi-agent-rea</code></td></tr><tr><td>README.md</td><td>private_ip</td><td>68</td><td><code>172.29.1.233</code></td></tr><tr><td>README.md</td><td>private_ip</td><td>69</td><td><code>172.29.1.233</code></td></tr><tr><td>README.md</td><td>private_ip</td><td>70</td><td><code>172.29.1.233</code></td></tr><tr><td>README.md</td><td>private_ip</td><td>71</td><td><code>172.29.1.233</code></td></tr><tr><td>README.md</td><td>private_ip</td><td>72</td><td><code>172.29.1.233</code></td></tr><tr><td>README.md</td><td>private_ip</td><td>73</td><td><code>172.29.1.233</code></td></tr><tr><td>README.md</td><td>private_ip</td><td>74</td><td><code>172.29.1.233</code></td></tr><tr><td>README.md</td><td>private_ip</td><td>75</td><td><code>172.29.1.233</code></td></tr><tr><td>runs/phase1_trace.json</td><td>private_ip</td><td>15</td><td><code>172.29.1.233</code></td></tr><tr><td>runs/phase2_trace.json</td><td>private_ip</td><td>15</td><td><code>172.29.1.233</code></td></tr><tr><td>runs/phase3_trace.json</td><td>private_ip</td><td>15</td><td><code>172.29.1.233</code></td></tr><tr><td>runs/phase4_trace.json</td><td>private_ip</td><td>15</td><td><code>172.29.1.233</code></td></tr><tr><td>runs/phase5_trace.json</td><td>private_ip</td><td>15</td><td><code>172.29.1.233</code></td></tr><tr><td>runs/phase6_trace.json</td><td>private_ip</td><td>15</td><td><code>172.29.1.233</code></td></tr><tr><td>runs/phase7_trace.json</td><td>private_ip</td><td>15</td><td><code>172.29.1.233</code></td></tr><tr><td>src/provider_config.py</td><td>private_ip</td><td>10</td><td><code>172.29.1.233</code></td></tr><tr><td>src/provider_config.py</td><td>credential_name</td><td>17</td><td><code>api_key</code></td></tr><tr><td>src/provider_config.py</td><td>credential_name</td><td>32</td><td><code>api_key</code></td></tr><tr><td>src/provider_config.py</td><td>credential_name</td><td>32</td><td><code>OPENAI_API_KEY</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>235</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>235</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>309</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>309</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>376</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>376</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>445</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>445</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>512</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>512</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>581</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>581</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>654</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>654</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>727</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>727</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>794</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>794</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>861</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>861</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>928</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>928</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>995</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>995</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>1097</td><td><code>api_key</code></td></tr><tr><td>src/reasoning_curriculum.py</td><td>credential_name</td><td>1097</td><td><code>api_key</code></td></tr><tr><td>visuals/PHASE1_VISUAL.html</td><td>private_ip</td><td>147</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE1_VISUAL.html</td><td>private_ip</td><td>413</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE2_VISUAL.html</td><td>private_ip</td><td>173</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE2_VISUAL.html</td><td>private_ip</td><td>800</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE3_VISUAL.html</td><td>private_ip</td><td>177</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE3_VISUAL.html</td><td>private_ip</td><td>841</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE4_VISUAL.html</td><td>private_ip</td><td>180</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE4_VISUAL.html</td><td>private_ip</td><td>962</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE5_VISUAL.html</td><td>private_ip</td><td>191</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE5_VISUAL.html</td><td>private_ip</td><td>1083</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE6_VISUAL.html</td><td>private_ip</td><td>200</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE6_VISUAL.html</td><td>private_ip</td><td>1224</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE7_VISUAL.html</td><td>private_ip</td><td>246</td><td><code>172.29.1.233</code></td></tr><tr><td>visuals/PHASE7_VISUAL.html</td><td>private_ip</td><td>2254</td><td><code>172.29.1.233</code></td></tr></tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <h2>File Inventory</h2>
+        <table>
+          <thead><tr><th>File</th><th>Category</th><th>Public Action</th><th>Findings</th></tr></thead>
+          <tbody><tr><td>.gitignore</td><td>config</td><td>keep</td><td>0</td></tr><tr><td>PHASE1_REASONING_BOTTLENECK.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE1_VALIDATION.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE2_VALIDATION.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE2_WORKER_AGENT.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE3_GLOBAL_LOCAL_PLANNING.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE3_VALIDATION.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE4_TOOL_OWNERSHIP.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE4_VALIDATION.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE5_INDEPENDENT_LOCAL_MEMORY.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE5_VALIDATION.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE6_SHARED_KNOWLEDGE_SYNCHRONIZATION.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE6_VALIDATION.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE7_SECOND_WORKER_AGENT.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PHASE7_VALIDATION.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>PROGRESS.html</td><td>generated_html</td><td>exclude or regenerate with sanitized provider metadata</td><td>0</td></tr><tr><td>README.md</td><td>curriculum_doc</td><td>sanitize before public repo</td><td>9</td></tr><tr><td>ROADMAP.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>SPEC.md</td><td>curriculum_doc</td><td>keep</td><td>0</td></tr><tr><td>requirements-pydantic-ai.txt</td><td>other</td><td>keep</td><td>0</td></tr><tr><td>runs/phase1_trace.json</td><td>generated_trace</td><td>sanitize before public repo</td><td>1</td></tr><tr><td>runs/phase2_trace.json</td><td>generated_trace</td><td>sanitize before public repo</td><td>1</td></tr><tr><td>runs/phase3_trace.json</td><td>generated_trace</td><td>sanitize before public repo</td><td>1</td></tr><tr><td>runs/phase4_trace.json</td><td>generated_trace</td><td>sanitize before public repo</td><td>1</td></tr><tr><td>runs/phase5_trace.json</td><td>generated_trace</td><td>sanitize before public repo</td><td>1</td></tr><tr><td>runs/phase6_trace.json</td><td>generated_trace</td><td>sanitize before public repo</td><td>1</td></tr><tr><td>runs/phase7_trace.json</td><td>generated_trace</td><td>sanitize before public repo</td><td>1</td></tr><tr><td>scripts/run_phase.py</td><td>python_source</td><td>keep</td><td>0</td></tr><tr><td>scripts/run_phase1_reasoning_bottleneck.py</td><td>python_source</td><td>keep</td><td>0</td></tr><tr><td>scripts/run_phase2_worker_agent.py</td><td>python_source</td><td>keep</td><td>0</td></tr><tr><td>scripts/run_phase3_global_local_planning.py</td><td>python_source</td><td>keep</td><td>0</td></tr><tr><td>scripts/run_phase4_tool_ownership.py</td><td>python_source</td><td>keep</td><td>0</td></tr><tr><td>scripts/run_phase5_independent_local_memory.py</td><td>python_source</td><td>keep</td><td>0</td></tr><tr><td>scripts/run_phase6_shared_knowledge_synchronization.py</td><td>python_source</td><td>keep</td><td>0</td></tr><tr><td>scripts/run_phase7_second_worker_agent.py</td><td>python_source</td><td>keep</td><td>0</td></tr><tr><td>scripts/serve_interactive.py</td><td>python_source</td><td>keep</td><td>0</td></tr><tr><td>src/__init__.py</td><td>python_source</td><td>keep</td><td>0</td></tr><tr><td>src/provider_config.py</td><td>python_source</td><td>sanitize before public repo</td><td>4</td></tr><tr><td>src/reasoning_curriculum.py</td><td>python_source</td><td>sanitize before public repo</td><td>26</td></tr><tr><td>visuals/PHASE1_VISUAL.html</td><td>generated_html</td><td>sanitize before public repo</td><td>2</td></tr><tr><td>visuals/PHASE2_VISUAL.html</td><td>generated_html</td><td>sanitize before public repo</td><td>2</td></tr><tr><td>visuals/PHASE3_VISUAL.html</td><td>generated_html</td><td>sanitize before public repo</td><td>2</td></tr><tr><td>visuals/PHASE4_VISUAL.html</td><td>generated_html</td><td>sanitize before public repo</td><td>2</td></tr><tr><td>visuals/PHASE5_VISUAL.html</td><td>generated_html</td><td>sanitize before public repo</td><td>2</td></tr><tr><td>visuals/PHASE6_VISUAL.html</td><td>generated_html</td><td>sanitize before public repo</td><td>2</td></tr><tr><td>visuals/PHASE7_VISUAL.html</td><td>generated_html</td><td>sanitize before public repo</td><td>2</td></tr></tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <h2>Next Phase</h2>
+        <p>Create a public-safe standalone repo copy and remove generated local-provider metadata.</p>
+      </section>
+      <section class="panel">
+        <h2>Inventory JSON</h2>
+        <details><summary>Open generated inventory</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 1,
+  &quot;phase_name&quot;: &quot;Portability Inventory&quot;,
+  &quot;source_app&quot;: &quot;multi-agent-reasoning-from-scratch&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;summary&quot;: {
+    &quot;files_scanned&quot;: 46,
+    &quot;categories&quot;: {
+      &quot;config&quot;: 1,
+      &quot;curriculum_doc&quot;: 17,
+      &quot;generated_html&quot;: 8,
+      &quot;other&quot;: 1,
+      &quot;generated_trace&quot;: 7,
+      &quot;python_source&quot;: 12
+    },
+    &quot;findings&quot;: 60,
+    &quot;public_repo_blocked_until_sanitized&quot;: true,
+    &quot;next_phase&quot;: &quot;Create a public-safe standalone repo copy and remove generated local-provider metadata.&quot;
+  },
+  &quot;files&quot;: [
+    {
+      &quot;path&quot;: &quot;.gitignore&quot;,
+      &quot;category&quot;: &quot;config&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE1_REASONING_BOTTLENECK.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE1_VALIDATION.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE2_VALIDATION.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE2_WORKER_AGENT.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE3_GLOBAL_LOCAL_PLANNING.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE3_VALIDATION.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE4_TOOL_OWNERSHIP.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE4_VALIDATION.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE5_INDEPENDENT_LOCAL_MEMORY.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE5_VALIDATION.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE6_SHARED_KNOWLEDGE_SYNCHRONIZATION.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE6_VALIDATION.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE7_SECOND_WORKER_AGENT.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PHASE7_VALIDATION.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;PROGRESS.html&quot;,
+      &quot;category&quot;: &quot;generated_html&quot;,
+      &quot;public_action&quot;: &quot;exclude or regenerate with sanitized provider metadata&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;README.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 9
+    },
+    {
+      &quot;path&quot;: &quot;ROADMAP.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;SPEC.md&quot;,
+      &quot;category&quot;: &quot;curriculum_doc&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;requirements-pydantic-ai.txt&quot;,
+      &quot;category&quot;: &quot;other&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase1_trace.json&quot;,
+      &quot;category&quot;: &quot;generated_trace&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 1
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase2_trace.json&quot;,
+      &quot;category&quot;: &quot;generated_trace&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 1
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase3_trace.json&quot;,
+      &quot;category&quot;: &quot;generated_trace&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 1
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase4_trace.json&quot;,
+      &quot;category&quot;: &quot;generated_trace&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 1
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase5_trace.json&quot;,
+      &quot;category&quot;: &quot;generated_trace&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 1
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase6_trace.json&quot;,
+      &quot;category&quot;: &quot;generated_trace&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 1
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase7_trace.json&quot;,
+      &quot;category&quot;: &quot;generated_trace&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 1
+    },
+    {
+      &quot;path&quot;: &quot;scripts/run_phase.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;scripts/run_phase1_reasoning_bottleneck.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;scripts/run_phase2_worker_agent.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;scripts/run_phase3_global_local_planning.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;scripts/run_phase4_tool_ownership.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;scripts/run_phase5_independent_local_memory.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;scripts/run_phase6_shared_knowledge_synchronization.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;scripts/run_phase7_second_worker_agent.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;scripts/serve_interactive.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;src/__init__.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;keep&quot;,
+      &quot;finding_count&quot;: 0
+    },
+    {
+      &quot;path&quot;: &quot;src/provider_config.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 4
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;category&quot;: &quot;python_source&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 26
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE1_VISUAL.html&quot;,
+      &quot;category&quot;: &quot;generated_html&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 2
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE2_VISUAL.html&quot;,
+      &quot;category&quot;: &quot;generated_html&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 2
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE3_VISUAL.html&quot;,
+      &quot;category&quot;: &quot;generated_html&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 2
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE4_VISUAL.html&quot;,
+      &quot;category&quot;: &quot;generated_html&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 2
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE5_VISUAL.html&quot;,
+      &quot;category&quot;: &quot;generated_html&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 2
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE6_VISUAL.html&quot;,
+      &quot;category&quot;: &quot;generated_html&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 2
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE7_VISUAL.html&quot;,
+      &quot;category&quot;: &quot;generated_html&quot;,
+      &quot;public_action&quot;: &quot;sanitize before public repo&quot;,
+      &quot;finding_count&quot;: 2
+    }
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;path&quot;: &quot;README.md&quot;,
+      &quot;type&quot;: &quot;local_home_path&quot;,
+      &quot;line&quot;: 60,
+      &quot;match&quot;: &quot;/home/prav/orb-execute/orb-execute/learn-agent/multi-agent-rea&quot;
+    },
+    {
+      &quot;path&quot;: &quot;README.md&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 68,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;README.md&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 69,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;README.md&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 70,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;README.md&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 71,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;README.md&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 72,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;README.md&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 73,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;README.md&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 74,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;README.md&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 75,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase1_trace.json&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 15,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase2_trace.json&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 15,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase3_trace.json&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 15,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase4_trace.json&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 15,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase5_trace.json&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 15,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase6_trace.json&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 15,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;runs/phase7_trace.json&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 15,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/provider_config.py&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 10,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/provider_config.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 17,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/provider_config.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 32,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/provider_config.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 32,
+      &quot;match&quot;: &quot;OPENAI_API_KEY&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 235,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 235,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 309,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 309,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 376,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 376,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 445,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 445,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 512,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 512,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 581,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 581,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 654,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 654,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 727,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 727,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 794,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 794,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 861,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 861,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 928,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 928,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 995,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 995,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 1097,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;src/reasoning_curriculum.py&quot;,
+      &quot;type&quot;: &quot;credential_name&quot;,
+      &quot;line&quot;: 1097,
+      &quot;match&quot;: &quot;api_key&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE1_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 147,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE1_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 413,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE2_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 173,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE2_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 800,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE3_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 177,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE3_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 841,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE4_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 180,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE4_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 962,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE5_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 191,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE5_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 1083,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE6_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 200,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE6_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 1224,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE7_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 246,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    },
+    {
+      &quot;path&quot;: &quot;visuals/PHASE7_VISUAL.html&quot;,
+      &quot;type&quot;: &quot;private_ip&quot;,
+      &quot;line&quot;: 2254,
+      &quot;match&quot;: &quot;172.29.1.233&quot;
+    }
+  ],
+  &quot;azure_mapping&quot;: [
+    {
+      &quot;local&quot;: &quot;Pydantic AI Analyst Agent&quot;,
+      &quot;azure&quot;: &quot;Foundry-hosted agent&quot;,
+      &quot;migration_note&quot;: &quot;Keep instructions and output schema stable; swap provider/hosting first.&quot;
+    },
+    {
+      &quot;local&quot;: &quot;Pydantic AI Worker Agent A/B&quot;,
+      &quot;azure&quot;: &quot;Foundry-hosted worker agents introduced one at a time&quot;,
+      &quot;migration_note&quot;: &quot;Preserve role boundaries while avoiding multiple hosted agents until the lesson needs them.&quot;
+    },
+    {
+      &quot;local&quot;: &quot;Maze Tool Python functions&quot;,
+      &quot;azure&quot;: &quot;In-process module first; Azure-hosted tool boundary later&quot;,
+      &quot;migration_note&quot;: &quot;Keep the tool contract stable before paying for a separate hosted tool surface.&quot;
+    },
+    {
+      &quot;local&quot;: &quot;Team Memory in trace/state&quot;,
+      &quot;azure&quot;: &quot;In-process memory first; Azure-native state later&quot;,
+      &quot;migration_note&quot;: &quot;Introduce a memory interface before selecting a paid durable backend.&quot;
+    },
+    {
+      &quot;local&quot;: &quot;Generated HTML trace&quot;,
+      &quot;azure&quot;: &quot;Foundry traces plus optional static HTML artifact&quot;,
+      &quot;migration_note&quot;: &quot;Keep local HTML for learning while adding Foundry trace correlation.&quot;
+    }
+  ],
+  &quot;cost_guardrails&quot;: [
+    &quot;Use one resource group, one Foundry project, and one model deployment at first.&quot;,
+    &quot;Deploy one Foundry-hosted agent before introducing multiple hosted agents.&quot;,
+    &quot;Keep maze traces short and preserve the 25-call learning budget.&quot;,
+    &quot;Prefer source-code hosted-agent deployment before container deployment unless the lesson requires containers.&quot;,
+    &quot;Use minimum practical hosted-agent CPU and memory sizing.&quot;,
+    &quot;Do not add Azure Functions, Cosmos DB, Storage, or extra monitoring services until a phase explicitly needs that construct.&quot;,
+    &quot;Clean up lab resources when they are no longer needed.&quot;
+  ]
+}</pre></details>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

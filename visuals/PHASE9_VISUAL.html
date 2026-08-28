@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 9</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --amber:#9a6500; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    h3 { margin:0 0 8px; font-size:16px; }
+    p { margin:0; color:var(--muted); }
+    a { color:var(--blue); font-weight:800; text-decoration:none; }
+    .panel,.summary,.step,.metric { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:16px; }
+    .summary strong { display:block; font-size:26px; text-transform:capitalize; }
+    .stack { display:grid; gap:14px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .metric { box-shadow:none; }
+    .metric span,.step span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:6px; font-size:26px; }
+    .flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .step { box-shadow:none; min-height:150px; border-left:5px solid var(--blue); }
+    .step.tool { border-left-color:var(--green); background:#eef8f3; }
+    .step.note { border-left-color:var(--amber); background:#fff8e7; }
+    .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#111827; background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    ul { margin:8px 0 0; padding-left:20px; }
+    @media (max-width:980px) { header,.metrics,.flow,.two { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 9 - Maze Tool Boundary</h1>
+        <p>Split maze inspection and movement execution out of direct agent runtime logic and behind a stable MazeTool program interface.</p>
+      </div>
+      <aside class="summary">
+        <span>Status</span>
+        <strong>complete</strong>
+        <p>No new Azure service was created in this phase.</p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Phase Metrics</h2>
+        <div class="metrics">
+          <div class="metric"><span>Boundary Events</span><strong>32</strong></div>
+          <div class="metric"><span>Tool Results</span><strong>32</strong></div>
+          <div class="metric"><span>New Azure Services</span><strong>0</strong></div>
+          <div class="metric"><span>Validation LLM Calls</span><strong>0</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Boundary Flow</h2>
+        <div class="flow">
+          <article class="step"><span>1. Worker Agent</span><h3>Reasoning owner</h3><p>Chooses what operation it needs: inspect or move.</p></article>
+          <article class="step tool"><span>2. MazeTool Program</span><h3>Callable boundary</h3><p>Receives typed request fields and returns typed result fields.</p></article>
+          <article class="step"><span>3. Maze Engine</span><h3>Rule owner</h3><p>Knows grid bounds, walls, legal moves, and validation.</p></article>
+          <article class="step note"><span>4. Later Phase</span><h3>Deployment split</h3><p>The same contract can become an Azure Function or hosted tool later.</p></article>
+        </div>
+      </section>
+      <section class="two">
+        <article class="panel">
+          <h2>Tool Contract</h2>
+          <p><code>MazeToolProgram</code></p>
+          <h3>Operations</h3>
+          <ul><li>inspect</li><li>move</li></ul>
+        </article>
+        <article class="panel">
+          <h2>Trace Additions</h2>
+          <p>Every maze operation now records request and result payloads.</p>
+          <ul><li>tool_boundary</li><li>tool_request</li><li>tool_result</li></ul>
+        </article>
+      </section>
+      <section class="panel">
+        <h2>Boundary Summary</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Before</td><td>Agents and trace code called maze helper functions directly inside the hosted monolith.</td></tr><tr><td>After</td><td>Agents call MazeToolProgram inspect/move operations through typed request/result payloads.</td></tr><tr><td>Tool Runtime Location</td><td>still in the same Azure-hosted package</td></tr><tr><td>New Azure Service Created</td><td>False</td></tr><tr><td>Why No New Service</td><td>The lesson is program boundary extraction first; separate Azure deployment comes after the interface is stable.</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Validation</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Command</td><td>[&quot;/usr/local/Caskroom/miniconda/base/bin/python3&quot;, &quot;main.py&quot;, &quot;--once&quot;, &quot;--provider&quot;, &quot;test&quot;, &quot;--output-dir&quot;, &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase9_maze_tool_boundary_validation&quot;]</td></tr><tr><td>Returncode</td><td>0</td></tr><tr><td>Stdout Tail</td><td>deterministic_tool_calls&quot;: 0,
+    &quot;planning_boundary_established&quot;: true,
+    &quot;tool_boundary_enforced&quot;: true,
+    &quot;maze_tool_boundary_extracted&quot;: true,
+    &quot;maze_tool_boundary_name&quot;: &quot;MazeToolProgram&quot;,
+    &quot;maze_tool_boundary_location&quot;: &quot;in-process Azure-hosted program module&quot;,
+    &quot;separate_azure_tool_service_created&quot;: false,
+    &quot;worker_agents_introduced&quot;: 2,
+    &quot;worker_agent_b_introduced&quot;: true,
+    &quot;next_phase&quot;: &quot;Move one Worker Agent into its own hosted boundary after the MazeTool program interface is stable.&quot;,
+    &quot;elapsed_seconds&quot;: 0.002
+  },
+  &quot;artifacts&quot;: {
+    &quot;trace&quot;: &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase9_maze_tool_boundary_validation/phase7_monolithic_trace.json&quot;,
+    &quot;visual&quot;: &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase9_maze_tool_boundary_validation/PHASE7_MONOLITHIC_VISUAL.html&quot;,
+    &quot;progress&quot;: &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase9_maze_tool_boundary_validation/PROGRESS.html&quot;
+  }
+}</td></tr><tr><td>Stderr Tail</td><td></td></tr><tr><td>Trace Created</td><td>True</td></tr><tr><td>Tool Events</td><td>32</td></tr><tr><td>Boundary Events</td><td>32</td></tr><tr><td>Tool Results</td><td>32</td></tr><tr><td>All Tool Results Ok</td><td>True</td></tr><tr><td>Maze Tool Module</td><td>hosted/phase7-monolithic-maze-agent/src/maze_tool_boundary.py</td></tr><tr><td>Trace Summary</td><td>{&quot;status&quot;: &quot;complete&quot;, &quot;implemented_scope&quot;: &quot;Part II Phase 1-7 starter deployment&quot;, &quot;llm_call_budget&quot;: 25, &quot;llm_call_budget_used&quot;: 0, &quot;llm_call_budget_remaining&quot;: 25, &quot;reasoning_agents&quot;: 3, &quot;pydantic_ai_reasoning_agents&quot;: 3, &quot;deterministic_orchestrators&quot;: 1, &quot;deterministic_workers&quot;: 0, &quot;team_memory_components&quot;: 1, &quot;local_memory_components&quot;: 2, &quot;analyst_llm_calls&quot;: 0, &quot;worker_agent_llm_calls&quot;: 0, &quot;worker_agent_a_llm_calls&quot;: 0, &quot;worker_agent_b_llm_calls&quot;: 0, &quot;worker_move_decision_calls&quot;: 0, &quot;worker_policy_setup_calls&quot;: 0, &quot;orchestrator_llm_calls&quot;: 0, &quot;global_planning_owner&quot;: &quot;Analyst Agent&quot;, &quot;local_planning_owner&quot;: &quot;Worker Agent A and Worker Agent B&quot;, &quot;shared_memory_owner&quot;: &quot;Team Memory&quot;, &quot;local_memory_owner&quot;: &quot;each assigned Worker Agent&quot;, &quot;synchronization_owner&quot;: &quot;each Worker Agent under Analyst policy&quot;, &quot;team_memory_writes&quot;: 8, &quot;local_memory_writes&quot;: 18, &quot;sync_evaluations&quot;: 18, &quot;promoted_discoveries&quot;: 6, &quot;retained_local_discoveries&quot;: 12, &quot;memory_boundary_established&quot;: true, &quot;synchronization_policy_established&quot;: true, &quot;maze_a_tool_calls&quot;: 16, &quot;maze_b_tool_calls&quot;: 16, &quot;maze_b_deterministic_tool_calls&quot;: 0, &quot;planning_boundary_established&quot;: true, &quot;tool_boundary_enforced&quot;: true, &quot;maze_tool_boundary_extracted&quot;: true, &quot;maze_tool_boundary_name&quot;: &quot;MazeToolProgram&quot;, &quot;maze_tool_boundary_location&quot;: &quot;in-process Azure-hosted program module&quot;, &quot;separate_azure_tool_service_created&quot;: false, &quot;worker_agents_introduced&quot;: 2, &quot;worker_agent_b_introduced&quot;: true, &quot;next_phase&quot;: &quot;Move one Worker Agent into its own hosted boundary after the MazeTool program interface is stable.&quot;, &quot;elapsed_seconds&quot;: 0.002}</td></tr><tr><td>Sample Trace Refreshed</td><td>True</td></tr></tbody></table>
+      </section>
+      
+      <section class="panel">
+        <h2>Live Azure Validation</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td>pass</td></tr><tr><td>Hosted Agent</td><td>maze-monolithic-agent</td></tr><tr><td>Active Version</td><td>4</td></tr><tr><td>Webui Url</td><td>https://maze-webui-func-prav-ada483.azurewebsites.net/</td></tr><tr><td>Api Run Source</td><td>foundry-hosted-agent</td></tr><tr><td>Trace Phase</td><td>7</td></tr><tr><td>Provider</td><td>foundry</td></tr><tr><td>Model</td><td>gpt41mini-maze</td></tr><tr><td>Llm Calls</td><td>17</td></tr><tr><td>Maze Tool Boundary</td><td>MazeToolProgram</td></tr><tr><td>Boundary Events</td><td>32</td></tr><tr><td>Events</td><td>96</td></tr><tr><td>Notes</td><td>Phase 9 is an Azure migration phase. The returned maze curriculum trace remains Part II Phase 7 but now includes the MazeToolProgram boundary.</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Report JSON</h2>
+        <details><summary>Open generated report</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 9,
+  &quot;phase_name&quot;: &quot;Maze Tool Boundary without New Azure Service&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;learning_objective&quot;: &quot;Split maze inspection and movement execution out of direct agent runtime logic and behind a stable MazeTool program interface.&quot;,
+  &quot;boundary&quot;: {
+    &quot;before&quot;: &quot;Agents and trace code called maze helper functions directly inside the hosted monolith.&quot;,
+    &quot;after&quot;: &quot;Agents call MazeToolProgram inspect/move operations through typed request/result payloads.&quot;,
+    &quot;tool_runtime_location&quot;: &quot;still in the same Azure-hosted package&quot;,
+    &quot;new_azure_service_created&quot;: false,
+    &quot;why_no_new_service&quot;: &quot;The lesson is program boundary extraction first; separate Azure deployment comes after the interface is stable.&quot;
+  },
+  &quot;maze_tool_contract&quot;: {
+    &quot;program&quot;: &quot;MazeToolProgram&quot;,
+    &quot;operations&quot;: [
+      &quot;inspect&quot;,
+      &quot;move&quot;
+    ],
+    &quot;request_fields&quot;: [
+      &quot;operation&quot;,
+      &quot;maze_id&quot;,
+      &quot;position&quot;,
+      &quot;move&quot;
+    ],
+    &quot;result_fields&quot;: [
+      &quot;ok&quot;,
+      &quot;maze_id&quot;,
+      &quot;position&quot;,
+      &quot;legal_moves&quot;,
+      &quot;new_position&quot;,
+      &quot;error&quot;
+    ],
+    &quot;trace_fields_added&quot;: [
+      &quot;tool_boundary&quot;,
+      &quot;tool_request&quot;,
+      &quot;tool_result&quot;
+    ]
+  },
+  &quot;validation&quot;: {
+    &quot;command&quot;: [
+      &quot;/usr/local/Caskroom/miniconda/base/bin/python3&quot;,
+      &quot;main.py&quot;,
+      &quot;--once&quot;,
+      &quot;--provider&quot;,
+      &quot;test&quot;,
+      &quot;--output-dir&quot;,
+      &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase9_maze_tool_boundary_validation&quot;
+    ],
+    &quot;returncode&quot;: 0,
+    &quot;stdout_tail&quot;: &quot;deterministic_tool_calls\&quot;: 0,\n    \&quot;planning_boundary_established\&quot;: true,\n    \&quot;tool_boundary_enforced\&quot;: true,\n    \&quot;maze_tool_boundary_extracted\&quot;: true,\n    \&quot;maze_tool_boundary_name\&quot;: \&quot;MazeToolProgram\&quot;,\n    \&quot;maze_tool_boundary_location\&quot;: \&quot;in-process Azure-hosted program module\&quot;,\n    \&quot;separate_azure_tool_service_created\&quot;: false,\n    \&quot;worker_agents_introduced\&quot;: 2,\n    \&quot;worker_agent_b_introduced\&quot;: true,\n    \&quot;next_phase\&quot;: \&quot;Move one Worker Agent into its own hosted boundary after the MazeTool program interface is stable.\&quot;,\n    \&quot;elapsed_seconds\&quot;: 0.002\n  },\n  \&quot;artifacts\&quot;: {\n    \&quot;trace\&quot;: \&quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase9_maze_tool_boundary_validation/phase7_monolithic_trace.json\&quot;,\n    \&quot;visual\&quot;: \&quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase9_maze_tool_boundary_validation/PHASE7_MONOLITHIC_VISUAL.html\&quot;,\n    \&quot;progress\&quot;: \&quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase9_maze_tool_boundary_validation/PROGRESS.html\&quot;\n  }\n}&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;trace_created&quot;: true,
+    &quot;tool_events&quot;: 32,
+    &quot;boundary_events&quot;: 32,
+    &quot;tool_results&quot;: 32,
+    &quot;all_tool_results_ok&quot;: true,
+    &quot;maze_tool_module&quot;: &quot;hosted/phase7-monolithic-maze-agent/src/maze_tool_boundary.py&quot;,
+    &quot;trace_summary&quot;: {
+      &quot;status&quot;: &quot;complete&quot;,
+      &quot;implemented_scope&quot;: &quot;Part II Phase 1-7 starter deployment&quot;,
+      &quot;llm_call_budget&quot;: 25,
+      &quot;llm_call_budget_used&quot;: 0,
+      &quot;llm_call_budget_remaining&quot;: 25,
+      &quot;reasoning_agents&quot;: 3,
+      &quot;pydantic_ai_reasoning_agents&quot;: 3,
+      &quot;deterministic_orchestrators&quot;: 1,
+      &quot;deterministic_workers&quot;: 0,
+      &quot;team_memory_components&quot;: 1,
+      &quot;local_memory_components&quot;: 2,
+      &quot;analyst_llm_calls&quot;: 0,
+      &quot;worker_agent_llm_calls&quot;: 0,
+      &quot;worker_agent_a_llm_calls&quot;: 0,
+      &quot;worker_agent_b_llm_calls&quot;: 0,
+      &quot;worker_move_decision_calls&quot;: 0,
+      &quot;worker_policy_setup_calls&quot;: 0,
+      &quot;orchestrator_llm_calls&quot;: 0,
+      &quot;global_planning_owner&quot;: &quot;Analyst Agent&quot;,
+      &quot;local_planning_owner&quot;: &quot;Worker Agent A and Worker Agent B&quot;,
+      &quot;shared_memory_owner&quot;: &quot;Team Memory&quot;,
+      &quot;local_memory_owner&quot;: &quot;each assigned Worker Agent&quot;,
+      &quot;synchronization_owner&quot;: &quot;each Worker Agent under Analyst policy&quot;,
+      &quot;team_memory_writes&quot;: 8,
+      &quot;local_memory_writes&quot;: 18,
+      &quot;sync_evaluations&quot;: 18,
+      &quot;promoted_discoveries&quot;: 6,
+      &quot;retained_local_discoveries&quot;: 12,
+      &quot;memory_boundary_established&quot;: true,
+      &quot;synchronization_policy_established&quot;: true,
+      &quot;maze_a_tool_calls&quot;: 16,
+      &quot;maze_b_tool_calls&quot;: 16,
+      &quot;maze_b_deterministic_tool_calls&quot;: 0,
+      &quot;planning_boundary_established&quot;: true,
+      &quot;tool_boundary_enforced&quot;: true,
+      &quot;maze_tool_boundary_extracted&quot;: true,
+      &quot;maze_tool_boundary_name&quot;: &quot;MazeToolProgram&quot;,
+      &quot;maze_tool_boundary_location&quot;: &quot;in-process Azure-hosted program module&quot;,
+      &quot;separate_azure_tool_service_created&quot;: false,
+      &quot;worker_agents_introduced&quot;: 2,
+      &quot;worker_agent_b_introduced&quot;: true,
+      &quot;next_phase&quot;: &quot;Move one Worker Agent into its own hosted boundary after the MazeTool program interface is stable.&quot;,
+      &quot;elapsed_seconds&quot;: 0.002
+    },
+    &quot;sample_trace_refreshed&quot;: true
+  },
+  &quot;live_hosted_validation&quot;: {
+    &quot;status&quot;: &quot;pass&quot;,
+    &quot;hosted_agent&quot;: &quot;maze-monolithic-agent&quot;,
+    &quot;active_version&quot;: &quot;4&quot;,
+    &quot;webui_url&quot;: &quot;https://maze-webui-func-prav-ada483.azurewebsites.net/&quot;,
+    &quot;api_run_source&quot;: &quot;foundry-hosted-agent&quot;,
+    &quot;trace_phase&quot;: 7,
+    &quot;provider&quot;: &quot;foundry&quot;,
+    &quot;model&quot;: &quot;gpt41mini-maze&quot;,
+    &quot;llm_calls&quot;: 17,
+    &quot;maze_tool_boundary&quot;: &quot;MazeToolProgram&quot;,
+    &quot;boundary_events&quot;: 32,
+    &quot;events&quot;: 96,
+    &quot;notes&quot;: &quot;Phase 9 is an Azure migration phase. The returned maze curriculum trace remains Part II Phase 7 but now includes the MazeToolProgram boundary.&quot;
+  },
+  &quot;summary&quot;: {
+    &quot;maze_tool_boundary_extracted&quot;: true,
+    &quot;hosted_agent_count_changed&quot;: 0,
+    &quot;azure_resources_created&quot;: 0,
+    &quot;new_function_apps_created&quot;: 0,
+    &quot;additional_idle_cost&quot;: &quot;$0&quot;,
+    &quot;llm_calls_during_validation&quot;: 0,
+    &quot;tool_events_through_boundary&quot;: 32,
+    &quot;webui_sample_trace_refreshed&quot;: true,
+    &quot;live_hosted_validation&quot;: &quot;pass&quot;,
+    &quot;next_phase&quot;: &quot;Move Worker Agent A into its own hosted boundary while reusing the MazeTool contract.&quot;
+  }
+}</pre></details>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

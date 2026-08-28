@@ -1,0 +1,2841 @@
+{
+  "course": "Multi-Agent Systems from First Principles - Part II",
+  "phase": 7,
+  "phase_name": "Second Worker Agent",
+  "concept": "Multiple Reasoning Workers",
+  "learning": {
+    "objective": "Introduce a second LLM Worker only after one is understood.",
+    "previous_architecture": "One local reasoning worker is not enough for broader work.",
+    "new_question": "How does a second reasoning worker change ownership?",
+    "result_observed": "A second Worker Agent can own a separate local reasoning domain without making the Orchestrator intelligent."
+  },
+  "provider": {
+    "provider": "test",
+    "model": "test",
+    "base_url": "test",
+    "model_note": "deterministic test provider"
+  },
+  "agents": [
+    {
+      "name": "Analyst Agent v6",
+      "kind": "LLM reasoning agent with multi-worker assignment",
+      "uses_pydantic_ai": true,
+      "owns": "global assignment across two Worker Agents"
+    },
+    {
+      "name": "Worker Agent A v6",
+      "kind": "LLM reasoning agent with Maze A tools and local memory",
+      "uses_pydantic_ai": true,
+      "owns": "Maze A local reasoning, memory, and synchronization"
+    },
+    {
+      "name": "Worker Agent B v6",
+      "kind": "LLM reasoning agent with Maze B tools and local memory",
+      "uses_pydantic_ai": true,
+      "owns": "Maze B local reasoning, memory, and synchronization"
+    },
+    {
+      "name": "Deterministic Orchestrator",
+      "kind": "deterministic coordinator",
+      "uses_pydantic_ai": false,
+      "owns": "dispatch two assignments"
+    },
+    {
+      "name": "Worker Local Memory A",
+      "kind": "deterministic private state",
+      "uses_pydantic_ai": false,
+      "owns": "Worker Agent A retained local details"
+    },
+    {
+      "name": "Worker Local Memory B",
+      "kind": "deterministic private state",
+      "uses_pydantic_ai": false,
+      "owns": "Worker Agent B retained local details"
+    },
+    {
+      "name": "Team Memory",
+      "kind": "deterministic shared state",
+      "uses_pydantic_ai": false,
+      "owns": "promoted shared discoveries from both Workers"
+    },
+    {
+      "name": "MazeTool Program",
+      "kind": "deterministic tool boundary",
+      "uses_pydantic_ai": false,
+      "owns": "typed inspect/move request handling"
+    },
+    {
+      "name": "Maze Engine",
+      "kind": "deterministic in-process engine",
+      "uses_pydantic_ai": false,
+      "owns": "grid rules, legal moves, and move validation"
+    }
+  ],
+  "worker_assignments": {
+    "Worker Agent A": {
+      "maze_id": "maze_a",
+      "maze_label": "Maze A"
+    },
+    "Worker Agent B": {
+      "maze_id": "maze_b",
+      "maze_label": "Maze B"
+    }
+  },
+  "worker_move_decisions": {
+    "Worker Agent A": [
+      {
+        "step": 1,
+        "position": [
+          0,
+          0
+        ],
+        "chosen_move": "east",
+        "rationale": "Worker Agent A chooses east from (0, 0) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "east"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 2,
+        "position": [
+          0,
+          1
+        ],
+        "chosen_move": "east",
+        "rationale": "Worker Agent A chooses east from (0, 1) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "west",
+          "east"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 3,
+        "position": [
+          0,
+          2
+        ],
+        "chosen_move": "south",
+        "rationale": "Worker Agent A chooses south from (0, 2) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "south",
+          "west"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 4,
+        "position": [
+          1,
+          2
+        ],
+        "chosen_move": "south",
+        "rationale": "Worker Agent A chooses south from (1, 2) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "north",
+          "south"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 5,
+        "position": [
+          2,
+          2
+        ],
+        "chosen_move": "east",
+        "rationale": "Worker Agent A chooses east from (2, 2) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "north",
+          "west",
+          "east"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 6,
+        "position": [
+          2,
+          3
+        ],
+        "chosen_move": "east",
+        "rationale": "Worker Agent A chooses east from (2, 3) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "west",
+          "east"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 7,
+        "position": [
+          2,
+          4
+        ],
+        "chosen_move": "south",
+        "rationale": "Worker Agent A chooses south from (2, 4) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "north",
+          "south",
+          "west"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 8,
+        "position": [
+          3,
+          4
+        ],
+        "chosen_move": "south",
+        "rationale": "Worker Agent A chooses south from (3, 4) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "north",
+          "south"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      }
+    ],
+    "Worker Agent B": [
+      {
+        "step": 1,
+        "position": [
+          0,
+          0
+        ],
+        "chosen_move": "south",
+        "rationale": "Worker Agent B chooses south from (0, 0) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "south",
+          "east"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 2,
+        "position": [
+          1,
+          0
+        ],
+        "chosen_move": "east",
+        "rationale": "Worker Agent B chooses east from (1, 0) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "north",
+          "east"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 3,
+        "position": [
+          1,
+          1
+        ],
+        "chosen_move": "south",
+        "rationale": "Worker Agent B chooses south from (1, 1) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "north",
+          "south",
+          "west"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 4,
+        "position": [
+          2,
+          1
+        ],
+        "chosen_move": "east",
+        "rationale": "Worker Agent B chooses east from (2, 1) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "north",
+          "east"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 5,
+        "position": [
+          2,
+          2
+        ],
+        "chosen_move": "east",
+        "rationale": "Worker Agent B chooses east from (2, 2) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "west",
+          "east"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 6,
+        "position": [
+          2,
+          3
+        ],
+        "chosen_move": "east",
+        "rationale": "Worker Agent B chooses east from (2, 3) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "north",
+          "west",
+          "east"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 7,
+        "position": [
+          2,
+          4
+        ],
+        "chosen_move": "south",
+        "rationale": "Worker Agent B chooses south from (2, 4) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "north",
+          "south",
+          "west"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      },
+      {
+        "step": 8,
+        "position": [
+          3,
+          4
+        ],
+        "chosen_move": "south",
+        "rationale": "Worker Agent B chooses south from (3, 4) using current legal moves, visited memory, and goal direction.",
+        "legal_moves_seen": [
+          "north",
+          "south"
+        ],
+        "confidence": 0.9,
+        "llm_call_count": 0
+      }
+    ]
+  },
+  "synchronization_policy": {
+    "retain_local": [
+      "routine visited-cell notes",
+      "temporary rejected backtracks",
+      "single-step legal move checks"
+    ],
+    "promote_shared": [
+      "assignment acceptance",
+      "route viability checkpoint",
+      "blocked or escalation state",
+      "completion summary"
+    ]
+  },
+  "mazes": [
+    {
+      "id": "maze_a",
+      "label": "Maze A",
+      "rows": [
+        "S..#.",
+        "##.#.",
+        ".....",
+        ".###.",
+        "....G"
+      ],
+      "start": [
+        0,
+        0
+      ],
+      "goal": [
+        4,
+        4
+      ],
+      "path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "maze_b",
+      "label": "Maze B",
+      "rows": [
+        "S.#..",
+        "..#..",
+        "#....",
+        ".###.",
+        "....G"
+      ],
+      "start": [
+        0,
+        0
+      ],
+      "goal": [
+        4,
+        4
+      ],
+      "path": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    }
+  ],
+  "events": [
+    {
+      "type": "state",
+      "actor": "Python Maze",
+      "label": "same lab environment",
+      "detail": "Phase 7 keeps the same two mazes and promotes Worker Program B into Worker Agent B.",
+      "index": 0
+    },
+    {
+      "type": "plan",
+      "actor": "Analyst Agent",
+      "target": "Team Memory",
+      "label": "multi-worker assignment",
+      "detail": "Assign Maze A to Worker Agent A and Maze B to Worker Agent B. Each Worker owns its own maze tools, local memory, and synchronization decisions.",
+      "llm_call_count": 0,
+      "index": 1
+    },
+    {
+      "type": "boundary",
+      "actor": "Analyst Agent",
+      "target": "Deterministic Orchestrator",
+      "label": "coordination boundary",
+      "detail": "The Analyst does not choose step-by-step moves for either maze, and the deterministic Orchestrator only dispatches assignments.",
+      "llm_call_count": 0,
+      "index": 2
+    },
+    {
+      "type": "memory",
+      "actor": "Analyst Agent",
+      "target": "Team Memory",
+      "label": "assign Maze A",
+      "detail": "Shared write: Maze A assigned to Worker Agent A; local route details belong to that Worker.",
+      "memory_scope": "shared",
+      "memory_write": "team",
+      "llm_call_count": 0,
+      "index": 3
+    },
+    {
+      "type": "assignment",
+      "actor": "Deterministic Orchestrator",
+      "target": "Worker Agent A",
+      "label": "dispatch Maze A",
+      "detail": "Orchestrator dispatches Maze A to Worker Agent A without a model call or route reasoning.",
+      "llm_call_count": 0,
+      "index": 4
+    },
+    {
+      "type": "memory",
+      "actor": "Analyst Agent",
+      "target": "Team Memory",
+      "label": "assign Maze B",
+      "detail": "Shared write: Maze B assigned to Worker Agent B; local route details belong to that Worker.",
+      "memory_scope": "shared",
+      "memory_write": "team",
+      "llm_call_count": 0,
+      "index": 5
+    },
+    {
+      "type": "assignment",
+      "actor": "Deterministic Orchestrator",
+      "target": "Worker Agent B",
+      "label": "dispatch Maze B",
+      "detail": "Orchestrator dispatches Maze B to Worker Agent B without a model call or route reasoning.",
+      "llm_call_count": 0,
+      "index": 6
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "local ownership accepted",
+      "detail": "Use Maze A tools, private local memory, and synchronization decisions for Maze A only.",
+      "llm_call_count": 0,
+      "index": 7
+    },
+    {
+      "type": "boundary",
+      "actor": "Worker Agent A",
+      "target": "Team Memory",
+      "label": "worker sync policy",
+      "detail": "Promote assignment acceptance, route viability, blocked state, and completion; retain routine visited-cell and rejected-move notes locally.",
+      "llm_call_count": 0,
+      "index": 8
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        0
+      ],
+      "detail": "Worker Agent A sends inspect request for Maze A at (0, 0); MazeTool Program (external-http) returns legal moves: east.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          0
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          0
+        ],
+        "legal_moves": [
+          "east"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 9
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        0
+      ],
+      "detail": "Private write for Maze A: visited=[(0, 0)]; chosen=east; rejected for now=none.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 10
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent A",
+      "target": "Team Memory",
+      "label": "promote shared discovery",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        0
+      ],
+      "detail": "Promote from Maze A: assignment accepted; Worker Agent A begins Maze A. This helps the team track multi-worker progress.",
+      "memory_scope": "shared",
+      "memory_write": "team",
+      "sync_decision": "promote",
+      "llm_call_count": 0,
+      "index": 11
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent A",
+      "label": "east",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        0
+      ],
+      "detail": "Fresh LLM decision at (0, 0): Worker Agent A chooses east from (0, 0) using current legal moves, visited memory, and goal direction. Raw move output: east.",
+      "llm_call_count": 0,
+      "index": 12
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "move east",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        1
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent A move 1 in Maze A: (0, 0) -> (0, 1).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          0
+        ],
+        "move": "east"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          0
+        ],
+        "legal_moves": [
+          "east"
+        ],
+        "new_position": [
+          0,
+          1
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 13
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        1
+      ],
+      "detail": "Worker Agent A sends inspect request for Maze A at (0, 1); MazeTool Program (external-http) returns legal moves: west, east.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          1
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          1
+        ],
+        "legal_moves": [
+          "west",
+          "east"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 14
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        1
+      ],
+      "detail": "Private write for Maze A: visited=[(0, 0), (0, 1)]; chosen=east; rejected for now=west.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 15
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        1
+      ],
+      "detail": "Retain local for Maze A: this step detail helps Worker Agent A but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 16
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent A",
+      "label": "east",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        1
+      ],
+      "detail": "Fresh LLM decision at (0, 1): Worker Agent A chooses east from (0, 1) using current legal moves, visited memory, and goal direction. Raw move output: east.",
+      "llm_call_count": 0,
+      "index": 17
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "move east",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        2
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent A move 2 in Maze A: (0, 1) -> (0, 2).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          1
+        ],
+        "move": "east"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          1
+        ],
+        "legal_moves": [
+          "west",
+          "east"
+        ],
+        "new_position": [
+          0,
+          2
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 18
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        2
+      ],
+      "detail": "Worker Agent A sends inspect request for Maze A at (0, 2); MazeTool Program (external-http) returns legal moves: south, west.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          2
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          2
+        ],
+        "legal_moves": [
+          "south",
+          "west"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 19
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        2
+      ],
+      "detail": "Private write for Maze A: visited=[(0, 0), (0, 1), (0, 2)]; chosen=south; rejected for now=west.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 20
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        2
+      ],
+      "detail": "Retain local for Maze A: this step detail helps Worker Agent A but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 21
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent A",
+      "label": "south",
+      "maze_id": "maze_a",
+      "position": [
+        0,
+        2
+      ],
+      "detail": "Fresh LLM decision at (0, 2): Worker Agent A chooses south from (0, 2) using current legal moves, visited memory, and goal direction. Raw move output: south.",
+      "llm_call_count": 0,
+      "index": 22
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "move south",
+      "maze_id": "maze_a",
+      "position": [
+        1,
+        2
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent A move 3 in Maze A: (0, 2) -> (1, 2).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          2
+        ],
+        "move": "south"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          0,
+          2
+        ],
+        "legal_moves": [
+          "south",
+          "west"
+        ],
+        "new_position": [
+          1,
+          2
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 23
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_a",
+      "position": [
+        1,
+        2
+      ],
+      "detail": "Worker Agent A sends inspect request for Maze A at (1, 2); MazeTool Program (external-http) returns legal moves: north, south.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_a",
+        "position": [
+          1,
+          2
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          1,
+          2
+        ],
+        "legal_moves": [
+          "north",
+          "south"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 24
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_a",
+      "position": [
+        1,
+        2
+      ],
+      "detail": "Private write for Maze A: visited=[(0, 0), (0, 1), (0, 2), (1, 2)]; chosen=south; rejected for now=north.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 25
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_a",
+      "position": [
+        1,
+        2
+      ],
+      "detail": "Retain local for Maze A: this step detail helps Worker Agent A but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 26
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent A",
+      "label": "south",
+      "maze_id": "maze_a",
+      "position": [
+        1,
+        2
+      ],
+      "detail": "Fresh LLM decision at (1, 2): Worker Agent A chooses south from (1, 2) using current legal moves, visited memory, and goal direction. Raw move output: south.",
+      "llm_call_count": 0,
+      "index": 27
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "move south",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        2
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent A move 4 in Maze A: (1, 2) -> (2, 2).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_a",
+        "position": [
+          1,
+          2
+        ],
+        "move": "south"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          1,
+          2
+        ],
+        "legal_moves": [
+          "north",
+          "south"
+        ],
+        "new_position": [
+          2,
+          2
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 28
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        2
+      ],
+      "detail": "Worker Agent A sends inspect request for Maze A at (2, 2); MazeTool Program (external-http) returns legal moves: north, west, east.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          2
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          2
+        ],
+        "legal_moves": [
+          "north",
+          "west",
+          "east"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 29
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        2
+      ],
+      "detail": "Private write for Maze A: visited=[(0, 0), (0, 1), (0, 2), (1, 2), (2, 2)]; chosen=east; rejected for now=north, west.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 30
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        2
+      ],
+      "detail": "Retain local for Maze A: this step detail helps Worker Agent A but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 31
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent A",
+      "label": "east",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        2
+      ],
+      "detail": "Fresh LLM decision at (2, 2): Worker Agent A chooses east from (2, 2) using current legal moves, visited memory, and goal direction. Raw move output: east.",
+      "llm_call_count": 0,
+      "index": 32
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "move east",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        3
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent A move 5 in Maze A: (2, 2) -> (2, 3).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          2
+        ],
+        "move": "east"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          2
+        ],
+        "legal_moves": [
+          "north",
+          "west",
+          "east"
+        ],
+        "new_position": [
+          2,
+          3
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 33
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        3
+      ],
+      "detail": "Worker Agent A sends inspect request for Maze A at (2, 3); MazeTool Program (external-http) returns legal moves: west, east.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          3
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          3
+        ],
+        "legal_moves": [
+          "west",
+          "east"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 34
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        3
+      ],
+      "detail": "Private write for Maze A: visited=[(0, 0), (0, 1), (0, 2), (1, 2), (2, 2), (2, 3)]; chosen=east; rejected for now=west.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 35
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        3
+      ],
+      "detail": "Retain local for Maze A: this step detail helps Worker Agent A but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 36
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent A",
+      "label": "east",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        3
+      ],
+      "detail": "Fresh LLM decision at (2, 3): Worker Agent A chooses east from (2, 3) using current legal moves, visited memory, and goal direction. Raw move output: east.",
+      "llm_call_count": 0,
+      "index": 37
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "move east",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        4
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent A move 6 in Maze A: (2, 3) -> (2, 4).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          3
+        ],
+        "move": "east"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          3
+        ],
+        "legal_moves": [
+          "west",
+          "east"
+        ],
+        "new_position": [
+          2,
+          4
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 38
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        4
+      ],
+      "detail": "Worker Agent A sends inspect request for Maze A at (2, 4); MazeTool Program (external-http) returns legal moves: north, south, west.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          4
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          4
+        ],
+        "legal_moves": [
+          "north",
+          "south",
+          "west"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 39
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        4
+      ],
+      "detail": "Private write for Maze A: visited=[(0, 0), (0, 1), (0, 2), (1, 2), (2, 2), (2, 3), (2, 4)]; chosen=south; rejected for now=north, west.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 40
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent A",
+      "target": "Team Memory",
+      "label": "promote shared discovery",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        4
+      ],
+      "detail": "Promote from Maze A: route viability checkpoint; Maze A has a clear south corridor. This helps the team track multi-worker progress.",
+      "memory_scope": "shared",
+      "memory_write": "team",
+      "sync_decision": "promote",
+      "llm_call_count": 0,
+      "index": 41
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent A",
+      "label": "south",
+      "maze_id": "maze_a",
+      "position": [
+        2,
+        4
+      ],
+      "detail": "Fresh LLM decision at (2, 4): Worker Agent A chooses south from (2, 4) using current legal moves, visited memory, and goal direction. Raw move output: south.",
+      "llm_call_count": 0,
+      "index": 42
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "move south",
+      "maze_id": "maze_a",
+      "position": [
+        3,
+        4
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent A move 7 in Maze A: (2, 4) -> (3, 4).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          4
+        ],
+        "move": "south"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          2,
+          4
+        ],
+        "legal_moves": [
+          "north",
+          "south",
+          "west"
+        ],
+        "new_position": [
+          3,
+          4
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 43
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_a",
+      "position": [
+        3,
+        4
+      ],
+      "detail": "Worker Agent A sends inspect request for Maze A at (3, 4); MazeTool Program (external-http) returns legal moves: north, south.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_a",
+        "position": [
+          3,
+          4
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          3,
+          4
+        ],
+        "legal_moves": [
+          "north",
+          "south"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 44
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_a",
+      "position": [
+        3,
+        4
+      ],
+      "detail": "Private write for Maze A: visited=[(0, 0), (0, 1), (0, 2), (1, 2), (2, 2), (2, 3), (2, 4), (3, 4)]; chosen=south; rejected for now=north.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 45
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_a",
+      "position": [
+        3,
+        4
+      ],
+      "detail": "Retain local for Maze A: this step detail helps Worker Agent A but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 46
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent A",
+      "label": "south",
+      "maze_id": "maze_a",
+      "position": [
+        3,
+        4
+      ],
+      "detail": "Fresh LLM decision at (3, 4): Worker Agent A chooses south from (3, 4) using current legal moves, visited memory, and goal direction. Raw move output: south.",
+      "llm_call_count": 0,
+      "index": 47
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent A",
+      "target": "MazeTool Program",
+      "label": "move south",
+      "maze_id": "maze_a",
+      "position": [
+        4,
+        4
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent A move 8 in Maze A: (3, 4) -> (4, 4).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_a",
+        "position": [
+          3,
+          4
+        ],
+        "move": "south"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_a",
+        "position": [
+          3,
+          4
+        ],
+        "legal_moves": [
+          "north",
+          "south"
+        ],
+        "new_position": [
+          4,
+          4
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 48
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent A",
+      "target": "Worker Agent A Local Memory",
+      "label": "final route retained locally",
+      "maze_id": "maze_a",
+      "position": [
+        4,
+        4
+      ],
+      "detail": "Private memory for Maze A keeps full route detail: [(0, 0), (0, 1), (0, 2), (1, 2), (2, 2), (2, 3), (2, 4), (3, 4), (4, 4)].",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 49
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent A",
+      "target": "Team Memory",
+      "label": "promote completion",
+      "maze_id": "maze_a",
+      "position": [
+        4,
+        4
+      ],
+      "detail": "Promote from Maze A: completion summary; Maze A is complete in 8 moves.",
+      "memory_scope": "shared",
+      "memory_write": "team",
+      "sync_decision": "promote",
+      "tools_used": [
+        "report_local_result"
+      ],
+      "llm_call_count": 0,
+      "index": 50
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "local ownership accepted",
+      "detail": "Use Maze B tools, private local memory, and synchronization decisions for Maze B only.",
+      "llm_call_count": 0,
+      "index": 51
+    },
+    {
+      "type": "boundary",
+      "actor": "Worker Agent B",
+      "target": "Team Memory",
+      "label": "worker sync policy",
+      "detail": "Promote assignment acceptance, route viability, blocked state, and completion; retain routine visited-cell and rejected-move notes locally.",
+      "llm_call_count": 0,
+      "index": 52
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_b",
+      "position": [
+        0,
+        0
+      ],
+      "detail": "Worker Agent B sends inspect request for Maze B at (0, 0); MazeTool Program (external-http) returns legal moves: south, east.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_b",
+        "position": [
+          0,
+          0
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          0,
+          0
+        ],
+        "legal_moves": [
+          "south",
+          "east"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 53
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_b",
+      "position": [
+        0,
+        0
+      ],
+      "detail": "Private write for Maze B: visited=[(0, 0)]; chosen=south; rejected for now=east.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 54
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent B",
+      "target": "Team Memory",
+      "label": "promote shared discovery",
+      "maze_id": "maze_b",
+      "position": [
+        0,
+        0
+      ],
+      "detail": "Promote from Maze B: assignment accepted; Worker Agent B begins Maze B. This helps the team track multi-worker progress.",
+      "memory_scope": "shared",
+      "memory_write": "team",
+      "sync_decision": "promote",
+      "llm_call_count": 0,
+      "index": 55
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent B",
+      "label": "south",
+      "maze_id": "maze_b",
+      "position": [
+        0,
+        0
+      ],
+      "detail": "Fresh LLM decision at (0, 0): Worker Agent B chooses south from (0, 0) using current legal moves, visited memory, and goal direction. Raw move output: south.",
+      "llm_call_count": 0,
+      "index": 56
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "move south",
+      "maze_id": "maze_b",
+      "position": [
+        1,
+        0
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent B move 1 in Maze B: (0, 0) -> (1, 0).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_b",
+        "position": [
+          0,
+          0
+        ],
+        "move": "south"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          0,
+          0
+        ],
+        "legal_moves": [
+          "south",
+          "east"
+        ],
+        "new_position": [
+          1,
+          0
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 57
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_b",
+      "position": [
+        1,
+        0
+      ],
+      "detail": "Worker Agent B sends inspect request for Maze B at (1, 0); MazeTool Program (external-http) returns legal moves: north, east.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_b",
+        "position": [
+          1,
+          0
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          1,
+          0
+        ],
+        "legal_moves": [
+          "north",
+          "east"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 58
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_b",
+      "position": [
+        1,
+        0
+      ],
+      "detail": "Private write for Maze B: visited=[(0, 0), (1, 0)]; chosen=east; rejected for now=north.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 59
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_b",
+      "position": [
+        1,
+        0
+      ],
+      "detail": "Retain local for Maze B: this step detail helps Worker Agent B but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 60
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent B",
+      "label": "east",
+      "maze_id": "maze_b",
+      "position": [
+        1,
+        0
+      ],
+      "detail": "Fresh LLM decision at (1, 0): Worker Agent B chooses east from (1, 0) using current legal moves, visited memory, and goal direction. Raw move output: east.",
+      "llm_call_count": 0,
+      "index": 61
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "move east",
+      "maze_id": "maze_b",
+      "position": [
+        1,
+        1
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent B move 2 in Maze B: (1, 0) -> (1, 1).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_b",
+        "position": [
+          1,
+          0
+        ],
+        "move": "east"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          1,
+          0
+        ],
+        "legal_moves": [
+          "north",
+          "east"
+        ],
+        "new_position": [
+          1,
+          1
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 62
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_b",
+      "position": [
+        1,
+        1
+      ],
+      "detail": "Worker Agent B sends inspect request for Maze B at (1, 1); MazeTool Program (external-http) returns legal moves: north, south, west.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_b",
+        "position": [
+          1,
+          1
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          1,
+          1
+        ],
+        "legal_moves": [
+          "north",
+          "south",
+          "west"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 63
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_b",
+      "position": [
+        1,
+        1
+      ],
+      "detail": "Private write for Maze B: visited=[(0, 0), (1, 0), (1, 1)]; chosen=south; rejected for now=north, west.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 64
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_b",
+      "position": [
+        1,
+        1
+      ],
+      "detail": "Retain local for Maze B: this step detail helps Worker Agent B but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 65
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent B",
+      "label": "south",
+      "maze_id": "maze_b",
+      "position": [
+        1,
+        1
+      ],
+      "detail": "Fresh LLM decision at (1, 1): Worker Agent B chooses south from (1, 1) using current legal moves, visited memory, and goal direction. Raw move output: south.",
+      "llm_call_count": 0,
+      "index": 66
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "move south",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        1
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent B move 3 in Maze B: (1, 1) -> (2, 1).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_b",
+        "position": [
+          1,
+          1
+        ],
+        "move": "south"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          1,
+          1
+        ],
+        "legal_moves": [
+          "north",
+          "south",
+          "west"
+        ],
+        "new_position": [
+          2,
+          1
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 67
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        1
+      ],
+      "detail": "Worker Agent B sends inspect request for Maze B at (2, 1); MazeTool Program (external-http) returns legal moves: north, east.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          1
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          1
+        ],
+        "legal_moves": [
+          "north",
+          "east"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 68
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        1
+      ],
+      "detail": "Private write for Maze B: visited=[(0, 0), (1, 0), (1, 1), (2, 1)]; chosen=east; rejected for now=north.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 69
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        1
+      ],
+      "detail": "Retain local for Maze B: this step detail helps Worker Agent B but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 70
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent B",
+      "label": "east",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        1
+      ],
+      "detail": "Fresh LLM decision at (2, 1): Worker Agent B chooses east from (2, 1) using current legal moves, visited memory, and goal direction. Raw move output: east.",
+      "llm_call_count": 0,
+      "index": 71
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "move east",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        2
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent B move 4 in Maze B: (2, 1) -> (2, 2).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          1
+        ],
+        "move": "east"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          1
+        ],
+        "legal_moves": [
+          "north",
+          "east"
+        ],
+        "new_position": [
+          2,
+          2
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 72
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        2
+      ],
+      "detail": "Worker Agent B sends inspect request for Maze B at (2, 2); MazeTool Program (external-http) returns legal moves: west, east.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          2
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          2
+        ],
+        "legal_moves": [
+          "west",
+          "east"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 73
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        2
+      ],
+      "detail": "Private write for Maze B: visited=[(0, 0), (1, 0), (1, 1), (2, 1), (2, 2)]; chosen=east; rejected for now=west.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 74
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        2
+      ],
+      "detail": "Retain local for Maze B: this step detail helps Worker Agent B but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 75
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent B",
+      "label": "east",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        2
+      ],
+      "detail": "Fresh LLM decision at (2, 2): Worker Agent B chooses east from (2, 2) using current legal moves, visited memory, and goal direction. Raw move output: east.",
+      "llm_call_count": 0,
+      "index": 76
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "move east",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        3
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent B move 5 in Maze B: (2, 2) -> (2, 3).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          2
+        ],
+        "move": "east"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          2
+        ],
+        "legal_moves": [
+          "west",
+          "east"
+        ],
+        "new_position": [
+          2,
+          3
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 77
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        3
+      ],
+      "detail": "Worker Agent B sends inspect request for Maze B at (2, 3); MazeTool Program (external-http) returns legal moves: north, west, east.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          3
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          3
+        ],
+        "legal_moves": [
+          "north",
+          "west",
+          "east"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 78
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        3
+      ],
+      "detail": "Private write for Maze B: visited=[(0, 0), (1, 0), (1, 1), (2, 1), (2, 2), (2, 3)]; chosen=east; rejected for now=north, west.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 79
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        3
+      ],
+      "detail": "Retain local for Maze B: this step detail helps Worker Agent B but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 80
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent B",
+      "label": "east",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        3
+      ],
+      "detail": "Fresh LLM decision at (2, 3): Worker Agent B chooses east from (2, 3) using current legal moves, visited memory, and goal direction. Raw move output: east.",
+      "llm_call_count": 0,
+      "index": 81
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "move east",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        4
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent B move 6 in Maze B: (2, 3) -> (2, 4).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          3
+        ],
+        "move": "east"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          3
+        ],
+        "legal_moves": [
+          "north",
+          "west",
+          "east"
+        ],
+        "new_position": [
+          2,
+          4
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 82
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        4
+      ],
+      "detail": "Worker Agent B sends inspect request for Maze B at (2, 4); MazeTool Program (external-http) returns legal moves: north, south, west.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          4
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          4
+        ],
+        "legal_moves": [
+          "north",
+          "south",
+          "west"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 83
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        4
+      ],
+      "detail": "Private write for Maze B: visited=[(0, 0), (1, 0), (1, 1), (2, 1), (2, 2), (2, 3), (2, 4)]; chosen=south; rejected for now=north, west.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 84
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent B",
+      "target": "Team Memory",
+      "label": "promote shared discovery",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        4
+      ],
+      "detail": "Promote from Maze B: route viability checkpoint; Maze B has a clear south corridor. This helps the team track multi-worker progress.",
+      "memory_scope": "shared",
+      "memory_write": "team",
+      "sync_decision": "promote",
+      "llm_call_count": 0,
+      "index": 85
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent B",
+      "label": "south",
+      "maze_id": "maze_b",
+      "position": [
+        2,
+        4
+      ],
+      "detail": "Fresh LLM decision at (2, 4): Worker Agent B chooses south from (2, 4) using current legal moves, visited memory, and goal direction. Raw move output: south.",
+      "llm_call_count": 0,
+      "index": 86
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "move south",
+      "maze_id": "maze_b",
+      "position": [
+        3,
+        4
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent B move 7 in Maze B: (2, 4) -> (3, 4).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          4
+        ],
+        "move": "south"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          2,
+          4
+        ],
+        "legal_moves": [
+          "north",
+          "south",
+          "west"
+        ],
+        "new_position": [
+          3,
+          4
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 87
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "list legal moves",
+      "maze_id": "maze_b",
+      "position": [
+        3,
+        4
+      ],
+      "detail": "Worker Agent B sends inspect request for Maze B at (3, 4); MazeTool Program (external-http) returns legal moves: north, south.",
+      "tools_used": [
+        "list_legal_moves"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "inspect",
+        "maze_id": "maze_b",
+        "position": [
+          3,
+          4
+        ]
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          3,
+          4
+        ],
+        "legal_moves": [
+          "north",
+          "south"
+        ],
+        "new_position": null,
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 88
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "write local observation",
+      "maze_id": "maze_b",
+      "position": [
+        3,
+        4
+      ],
+      "detail": "Private write for Maze B: visited=[(0, 0), (1, 0), (1, 1), (2, 1), (2, 2), (2, 3), (2, 4), (3, 4)]; chosen=south; rejected for now=north.",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 89
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "retain local detail",
+      "maze_id": "maze_b",
+      "position": [
+        3,
+        4
+      ],
+      "detail": "Retain local for Maze B: this step detail helps Worker Agent B but does not change team-level state.",
+      "memory_scope": "local",
+      "sync_decision": "retain",
+      "llm_call_count": 0,
+      "index": 90
+    },
+    {
+      "type": "decision",
+      "actor": "Worker Agent B",
+      "label": "south",
+      "maze_id": "maze_b",
+      "position": [
+        3,
+        4
+      ],
+      "detail": "Fresh LLM decision at (3, 4): Worker Agent B chooses south from (3, 4) using current legal moves, visited memory, and goal direction. Raw move output: south.",
+      "llm_call_count": 0,
+      "index": 91
+    },
+    {
+      "type": "tool_call",
+      "actor": "Worker Agent B",
+      "target": "MazeTool Program",
+      "label": "move south",
+      "maze_id": "maze_b",
+      "position": [
+        4,
+        4
+      ],
+      "detail": "MazeTool Program (external-http) validates Worker Agent B move 8 in Maze B: (3, 4) -> (4, 4).",
+      "tools_used": [
+        "move"
+      ],
+      "tool_boundary": "MazeToolProgram",
+      "tool_runtime": "external-http",
+      "tool_request": {
+        "operation": "move",
+        "maze_id": "maze_b",
+        "position": [
+          3,
+          4
+        ],
+        "move": "south"
+      },
+      "tool_result": {
+        "ok": true,
+        "maze_id": "maze_b",
+        "position": [
+          3,
+          4
+        ],
+        "legal_moves": [
+          "north",
+          "south"
+        ],
+        "new_position": [
+          4,
+          4
+        ],
+        "error": null
+      },
+      "llm_call_count": 0,
+      "index": 92
+    },
+    {
+      "type": "local_memory",
+      "actor": "Worker Agent B",
+      "target": "Worker Agent B Local Memory",
+      "label": "final route retained locally",
+      "maze_id": "maze_b",
+      "position": [
+        4,
+        4
+      ],
+      "detail": "Private memory for Maze B keeps full route detail: [(0, 0), (1, 0), (1, 1), (2, 1), (2, 2), (2, 3), (2, 4), (3, 4), (4, 4)].",
+      "memory_scope": "local",
+      "memory_write": "local",
+      "llm_call_count": 0,
+      "index": 93
+    },
+    {
+      "type": "sync",
+      "actor": "Worker Agent B",
+      "target": "Team Memory",
+      "label": "promote completion",
+      "maze_id": "maze_b",
+      "position": [
+        4,
+        4
+      ],
+      "detail": "Promote from Maze B: completion summary; Maze B is complete in 8 moves.",
+      "memory_scope": "shared",
+      "memory_write": "team",
+      "sync_decision": "promote",
+      "tools_used": [
+        "report_local_result"
+      ],
+      "llm_call_count": 0,
+      "index": 94
+    },
+    {
+      "type": "result",
+      "actor": "Curriculum Harness",
+      "label": "second worker introduced",
+      "detail": "Phase 7 has three reasoning agents: Analyst plus two independent Worker Agents, each with its own maze, local memory, tools, and sync decisions.",
+      "llm_call_count": 0,
+      "index": 95
+    }
+  ],
+  "role_outputs": [
+    {
+      "agent": "Analyst Agent v6",
+      "headline": "Analyst assigns independent local reasoning ownership to two Worker Agents.",
+      "multi_worker_assignment": "Assign Maze A to Worker Agent A and Maze B to Worker Agent B. Each Worker owns its own maze tools, local memory, and synchronization decisions.",
+      "coordination_boundary": "The Analyst does not choose step-by-step moves for either maze, and the deterministic Orchestrator only dispatches assignments.",
+      "confidence": 0.92,
+      "llm_call_count": 0
+    },
+    {
+      "agent": "Worker Agent A v6",
+      "headline": "Worker Agent A owns local reasoning for Maze A.",
+      "local_ownership": "Use Maze A tools, private local memory, and synchronization decisions for Maze A only.",
+      "sync_policy": "Promote assignment acceptance, route viability, blocked state, and completion; retain routine visited-cell and rejected-move notes locally.",
+      "confidence": 1.0,
+      "llm_call_count": 0
+    },
+    {
+      "agent": "Worker Agent B v6",
+      "headline": "Worker Agent B owns local reasoning for Maze B.",
+      "local_ownership": "Use Maze B tools, private local memory, and synchronization decisions for Maze B only.",
+      "sync_policy": "Promote assignment acceptance, route viability, blocked state, and completion; retain routine visited-cell and rejected-move notes locally.",
+      "confidence": 1.0,
+      "llm_call_count": 0
+    },
+    {
+      "agent": "Deterministic Orchestrator",
+      "headline": "Dispatches two assignments without reasoning.",
+      "coordination_boundary": "No route planning, no local memory access, no LLM call.",
+      "confidence": 1.0,
+      "llm_call_count": 0
+    },
+    {
+      "agent": "Team Memory",
+      "headline": "Receives promoted discoveries from both Worker Agents.",
+      "sync_policy": "Store assignments, promoted checkpoints, and completion summaries for Maze A and Maze B.",
+      "confidence": 1.0,
+      "llm_call_count": 0
+    }
+  ],
+  "summary": {
+    "status": "complete",
+    "implemented_scope": "Part II Phase 1-7 starter deployment",
+    "llm_call_budget": 25,
+    "llm_call_budget_used": 0,
+    "llm_call_budget_remaining": 25,
+    "reasoning_agents": 3,
+    "pydantic_ai_reasoning_agents": 3,
+    "deterministic_orchestrators": 1,
+    "deterministic_workers": 0,
+    "team_memory_components": 1,
+    "local_memory_components": 2,
+    "analyst_llm_calls": 0,
+    "worker_agent_llm_calls": 0,
+    "worker_agent_a_llm_calls": 0,
+    "worker_agent_b_llm_calls": 0,
+    "worker_move_decision_calls": 0,
+    "worker_policy_setup_calls": 0,
+    "orchestrator_llm_calls": 0,
+    "global_planning_owner": "Analyst Agent",
+    "local_planning_owner": "Worker Agent A and Worker Agent B",
+    "shared_memory_owner": "Team Memory",
+    "local_memory_owner": "each assigned Worker Agent",
+    "synchronization_owner": "each Worker Agent under Analyst policy",
+    "team_memory_writes": 8,
+    "local_memory_writes": 18,
+    "sync_evaluations": 18,
+    "promoted_discoveries": 6,
+    "retained_local_discoveries": 12,
+    "memory_boundary_established": true,
+    "synchronization_policy_established": true,
+    "maze_a_tool_calls": 16,
+    "maze_b_tool_calls": 16,
+    "maze_b_deterministic_tool_calls": 0,
+    "planning_boundary_established": true,
+    "tool_boundary_enforced": true,
+    "maze_tool_boundary_extracted": true,
+    "maze_tool_boundary_name": "ExternalMazeToolProgram",
+    "maze_tool_boundary_location": "external Azure Function",
+    "external_maze_tool_calls": 32,
+    "external_maze_tool_enabled": true,
+    "separate_azure_tool_service_created": true,
+    "worker_agents_introduced": 2,
+    "worker_agent_b_introduced": true,
+    "next_phase": "Move one Worker Agent into its own hosted boundary after the MazeTool program interface is stable.",
+    "elapsed_seconds": 5.085
+  }
+}

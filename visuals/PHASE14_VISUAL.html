@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 14</title>
+  <style>
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f7f8fa; color:#17202a; line-height:1.5; }
+    main { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:18px; border-bottom:1px solid #d9dee7; padding-bottom:20px; margin-bottom:20px; }
+    h1 { margin:0 0 8px; font-size:clamp(30px,4vw,44px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    p { margin:0; color:#5f6b7a; }
+    .panel,.metric,.node { background:#fff; border:1px solid #d9dee7; border-radius:8px; box-shadow:0 10px 28px rgba(28,36,48,.08); padding:16px; }
+    .metric strong { display:block; font-size:28px; }
+    .diagram { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; align-items:start; }
+    .node strong { display:block; font-size:17px; }
+    .node span { color:#5f6b7a; font-weight:800; font-size:12px; text-transform:uppercase; }
+    .agent { border-left:5px solid #285da8; }
+    .memory { border-left:5px solid #9a6500; }
+    .tool { border-left:5px solid #1f6f5b; }
+    table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #d9dee7; border-radius:8px; overflow:hidden; }
+    th,td { padding:10px; border-bottom:1px solid #e6eaf1; text-align:left; vertical-align:top; }
+    th { background:#eef2f7; }
+    pre { white-space:pre-wrap; background:#111827; color:#e5e7eb; border-radius:8px; padding:14px; overflow:auto; }
+    @media (max-width:900px) { header,.diagram { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Phase 14 - Azure Durable Team Memory</h1>
+      <p>Move Team Memory from request-scoped JSON to durable Azure Blob Storage while keeping the split Foundry role agents unchanged.</p>
+    </div>
+    <aside class="metric"><span>Status</span><strong>complete</strong><p>Mode: apply</p></aside>
+  </header>
+  <section class="diagram">
+    <article class="node agent"><span>Split Agents</span><strong>Analyst + Worker A + Worker B</strong><p>No new role agents are created in this phase.</p></article>
+    <article class="node memory"><span>Durable Memory</span><strong>Azure Blob Storage</strong><p>Team Memory is persisted by run id and can be read back after the trace completes.</p></article>
+    <article class="node tool"><span>Tool Boundary</span><strong>Foundry toolbox MCP</strong><p>Maze inspect/move calls continue through the Foundry-registered tool path.</p></article>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Live Validation</h2>
+    <table><tbody>
+      <tr><th>Source</th><td>foundry-split-role-agents</td></tr>
+      <tr><th>Memory Backend</th><td>Azure Blob Storage</td></tr>
+      <tr><th>Run ID</th><td>phase14-f1e551a00c3e45ac</td></tr>
+      <tr><th>LLM Calls</th><td>17 / 25</td></tr>
+      <tr><th>MCP Tool Calls</th><td>32</td></tr>
+      <tr><th>Direct HTTP Tool Calls</th><td>0</td></tr>
+    </tbody></table>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Persisted Keys</h2>
+    <ul><li>assignment.maze_a</li><li>assignment.maze_b</li><li>coordination_boundary</li><li>mission</li><li>result.maze_a</li><li>result.maze_b</li></ul>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Raw Report</h2>
+    <details><summary>Open JSON</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 14,
+  &quot;phase_name&quot;: &quot;Azure Durable Team Memory&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;mode&quot;: &quot;apply&quot;,
+  &quot;learning_objective&quot;: &quot;Move Team Memory from request-scoped JSON to durable Azure Blob Storage while keeping the split Foundry role agents unchanged.&quot;,
+  &quot;architecture&quot;: {
+    &quot;before&quot;: &quot;WebUI coordinator kept Team Memory in a request-local dict.&quot;,
+    &quot;after&quot;: &quot;WebUI coordinator persists Team Memory records to Azure Blob Storage using the Function App storage account.&quot;,
+    &quot;storage_choice&quot;: &quot;Reuse the existing Function App storage account; create one Blob container only.&quot;,
+    &quot;why_low_cost&quot;: &quot;No new storage account, model deployment, toolbox, or hosted agent is created.&quot;
+  },
+  &quot;package&quot;: {
+    &quot;path&quot;: &quot;runs/phase14_azure_durable_team_memory_webui.zip&quot;,
+    &quot;bytes&quot;: 15935,
+    &quot;excluded&quot;: [
+      &quot;.git&quot;,
+      &quot;.python_packages&quot;,
+      &quot;.venv&quot;,
+      &quot;__pycache__&quot;,
+      &quot;venv&quot;
+    ]
+  },
+  &quot;compile&quot;: {
+    &quot;returncode&quot;: 0,
+    &quot;stdout_tail&quot;: &quot;&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;command&quot;: [
+      &quot;python3&quot;,
+      &quot;-m&quot;,
+      &quot;py_compile&quot;,
+      &quot;webui/phase8-azure-webui/function_app.py&quot;
+    ]
+  },
+  &quot;webui_configuration&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status&quot;: &quot;configured&quot;,
+    &quot;command&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_AGENT_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;ENABLE_ORYX_BUILD\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_RUN_FROM_PACKAGE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_ANALYST_AGENT_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_WORKER_AGENT_A_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_WORKER_AGENT_B_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;TEAM_MEMORY_BACKEND\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;TEAM_MEMORY_TABLE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;TEAM_MEMORY_CONTAINER\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  }\n]&quot;,
+      &quot;stderr_tail&quot;: &quot;WARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;functionapp&quot;,
+        &quot;config&quot;,
+        &quot;appsettings&quot;,
+        &quot;set&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;maze-webui-func-prav-ada483&quot;,
+        &quot;--settings&quot;,
+        &quot;TEAM_MEMORY_BACKEND=azure-blob&quot;,
+        &quot;TEAM_MEMORY_CONTAINER=team-memory&quot;,
+        &quot;SCM_DO_BUILD_DURING_DEPLOYMENT=true&quot;,
+        &quot;ENABLE_ORYX_BUILD=true&quot;
+      ]
+    }
+  },
+  &quot;webui_deployment&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status&quot;: &quot;deployed&quot;,
+    &quot;command&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;WARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;functionapp&quot;,
+        &quot;deployment&quot;,
+        &quot;source&quot;,
+        &quot;config-zip&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;maze-webui-func-prav-ada483&quot;,
+        &quot;--src&quot;,
+        &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase14_azure_durable_team_memory_webui.zip&quot;
+      ]
+    }
+  },
+  &quot;live_validation&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status_code&quot;: 200,
+    &quot;source&quot;: &quot;foundry-split-role-agents&quot;,
+    &quot;phase&quot;: 14,
+    &quot;shared_memory_backend&quot;: &quot;Azure Blob Storage&quot;,
+    &quot;team_memory_run_id&quot;: &quot;phase14-f1e551a00c3e45ac&quot;,
+    &quot;team_memory_container&quot;: &quot;team-memory&quot;,
+    &quot;team_memory_fallback_error&quot;: null,
+    &quot;team_memory_reads&quot;: 7,
+    &quot;team_memory_writes&quot;: 6,
+    &quot;llm_calls&quot;: 17,
+    &quot;foundry_toolbox_mcp_calls&quot;: 32,
+    &quot;direct_http_tool_calls&quot;: 0,
+    &quot;memory_readback_status_code&quot;: 200,
+    &quot;memory_readback_keys&quot;: [
+      &quot;assignment.maze_a&quot;,
+      &quot;assignment.maze_b&quot;,
+      &quot;coordination_boundary&quot;,
+      &quot;mission&quot;,
+      &quot;result.maze_a&quot;,
+      &quot;result.maze_b&quot;
+    ],
+    &quot;passed&quot;: true
+  },
+  &quot;summary&quot;: {
+    &quot;new_storage_accounts&quot;: 0,
+    &quot;new_blob_containers&quot;: 1,
+    &quot;memory_backend&quot;: &quot;Azure Blob Storage&quot;,
+    &quot;durable_memory_verified&quot;: true,
+    &quot;next_phase&quot;: &quot;Use durable Team Memory for replay, audit, and multi-run comparison.&quot;
+  }
+}</pre></details>
+  </section>
+</main>
+</body>
+</html>

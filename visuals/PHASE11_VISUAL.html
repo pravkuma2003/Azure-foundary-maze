@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 11</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --amber:#9a6500; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    h3 { margin:0 0 8px; font-size:16px; }
+    p { margin:0; color:var(--muted); }
+    .panel,.summary,.step,.metric { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:16px; }
+    .summary strong { display:block; font-size:26px; text-transform:capitalize; }
+    .stack { display:grid; gap:14px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .metric { box-shadow:none; }
+    .metric span,.step span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:6px; font-size:26px; }
+    .flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .step { box-shadow:none; min-height:150px; border-left:5px solid var(--blue); }
+    .step.tool { border-left-color:var(--green); background:#eef8f3; }
+    .step.note { border-left-color:var(--amber); background:#fff8e7; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#111827; background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    @media (max-width:980px) { header,.metrics,.flow { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 11 - Foundry-Registered Maze Tool</h1>
+        <p>Register the external Azure Function Maze Tool as a Foundry-managed OpenAPI tool through a toolbox and project connection.</p>
+      </div>
+      <aside class="summary">
+        <span>Status</span>
+        <strong>complete</strong>
+        <p>Foundry project &gt; Tools &gt; Toolboxes tab; the individual OpenAPI tool is inside maze-toolbox.</p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Phase Metrics</h2>
+        <div class="metrics">
+          <div class="metric"><span>New Compute</span><strong>0</strong></div>
+          <div class="metric"><span>Toolboxes</span><strong>1</strong></div>
+          <div class="metric"><span>LLM Calls</span><strong>0</strong></div>
+          <div class="metric"><span>Function Reused</span><strong>yes</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Foundry Registration Flow</h2>
+        <div class="flow">
+          <article class="step"><span>1. Azure Function</span><h3>Existing Maze Tool</h3><p>Phase 10 Function remains the external implementation.</p></article>
+          <article class="step tool"><span>2. Project Connection</span><h3>Function Key</h3><p>Foundry stores the key as a project connection, outside source and browser code.</p></article>
+          <article class="step tool"><span>3. Toolbox</span><h3>OpenAPI Tool</h3><p>The OpenAPI spec is registered as <code>maze_tool_api</code> inside <code>maze-toolbox</code>.</p></article>
+          <article class="step note"><span>4. Runtime</span><h3>Next Boundary</h3><p>PydanticAI still uses direct HTTP today; next phase can consume the toolbox MCP endpoint.</p></article>
+        </div>
+      </section>
+      <section class="panel"><h2>Foundry Project</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Project Endpoint</td><td>https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab</td></tr><tr><td>Toolbox Name</td><td>maze-toolbox</td></tr><tr><td>Openapi Tool Name</td><td>maze_tool_api</td></tr><tr><td>Connection Name</td><td>maze-tool-function-key</td></tr><tr><td>External Service</td><td>maze-tool-func-prav-ada483</td></tr></tbody></table></section>
+      <section class="panel"><h2>OpenAPI Contract</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Source Url</td><td>https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/openapi.json</td></tr><tr><td>Local Toolbox File</td><td>tools/phase11-foundry-toolbox/maze_toolbox.json</td></tr><tr><td>Validation</td><td>{&quot;status_code&quot;: 200, &quot;url&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/openapi.json&quot;, &quot;title&quot;: &quot;Maze Tool API&quot;}</td></tr><tr><td>Operation Ids</td><td>[&quot;inspectMaze&quot;, &quot;moveInMaze&quot;]</td></tr></tbody></table></section>
+      <section class="panel"><h2>Connection</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Attempted</td><td>True</td></tr><tr><td>Status</td><td>created_or_updated</td></tr><tr><td>Name</td><td>maze-tool-function-key</td></tr><tr><td>Target</td><td>https://maze-tool-func-prav-ada483.azurewebsites.net</td></tr><tr><td>Auth</td><td>custom-keys: x-functions-key</td></tr><tr><td>Command</td><td>{&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;Connection \&quot;maze-tool-function-key\&quot; created in project \&quot;maze-migration-lab\&quot;.&quot;, &quot;stderr_tail&quot;: &quot;&quot;, &quot;command&quot;: [&quot;azd&quot;, &quot;ai&quot;, &quot;connection&quot;, &quot;create&quot;, &quot;maze-tool-function-key&quot;, &quot;--kind&quot;, &quot;remote-tool&quot;, &quot;--target&quot;, &quot;https://maze-tool-func-prav-ada483.azurewebsites.net&quot;, &quot;--auth-type&quot;, &quot;custom-keys&quot;, &quot;--custom-key&quot;, &quot;[redacted]&quot;, &quot;--force&quot;, &quot;-p&quot;, &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;, &quot;--output&quot;, &quot;json&quot;]}</td></tr></tbody></table></section>
+      <section class="panel"><h2>Toolbox</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td>created</td></tr><tr><td>Name</td><td>maze-toolbox</td></tr><tr><td>Tool</td><td>maze_tool_api</td></tr><tr><td>Listed In Project</td><td>True</td></tr><tr><td>Mcp Endpoint Observed</td><td>True</td></tr></tbody></table></section>
+      <section class="panel"><h2>Report JSON</h2><details><summary>Open generated report</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 11,
+  &quot;phase_name&quot;: &quot;Foundry-Registered Maze Tool&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;mode&quot;: &quot;apply&quot;,
+  &quot;learning_objective&quot;: &quot;Register the external Azure Function Maze Tool as a Foundry-managed OpenAPI tool through a toolbox and project connection.&quot;,
+  &quot;documentation_basis&quot;: {
+    &quot;microsoft_learn_openapi_tools&quot;: &quot;https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/openapi&quot;,
+    &quot;toolbox_concept&quot;: &quot;OpenAPI tools are embedded under tools[].openapi.spec; project_connection auth references a project connection.&quot;
+  },
+  &quot;foundry_project&quot;: {
+    &quot;project_endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+    &quot;toolbox_name&quot;: &quot;maze-toolbox&quot;,
+    &quot;openapi_tool_name&quot;: &quot;maze_tool_api&quot;,
+    &quot;connection_name&quot;: &quot;maze-tool-function-key&quot;,
+    &quot;external_service&quot;: &quot;maze-tool-func-prav-ada483&quot;
+  },
+  &quot;openapi_contract&quot;: {
+    &quot;source_url&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/openapi.json&quot;,
+    &quot;local_toolbox_file&quot;: &quot;tools/phase11-foundry-toolbox/maze_toolbox.json&quot;,
+    &quot;validation&quot;: {
+      &quot;status_code&quot;: 200,
+      &quot;url&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/openapi.json&quot;,
+      &quot;title&quot;: &quot;Maze Tool API&quot;
+    },
+    &quot;operation_ids&quot;: [
+      &quot;inspectMaze&quot;,
+      &quot;moveInMaze&quot;
+    ]
+  },
+  &quot;function_key&quot;: {
+    &quot;returncode&quot;: 0,
+    &quot;stdout_tail&quot;: &quot;[redacted]&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;command&quot;: [
+      &quot;az&quot;,
+      &quot;functionapp&quot;,
+      &quot;keys&quot;,
+      &quot;list&quot;,
+      &quot;--resource-group&quot;,
+      &quot;rg-maze-foundry-lab&quot;,
+      &quot;--name&quot;,
+      &quot;maze-tool-func-prav-ada483&quot;,
+      &quot;--query&quot;,
+      &quot;functionKeys.default&quot;,
+      &quot;--output&quot;,
+      &quot;tsv&quot;
+    ]
+  },
+  &quot;connection&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status&quot;: &quot;created_or_updated&quot;,
+    &quot;name&quot;: &quot;maze-tool-function-key&quot;,
+    &quot;target&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net&quot;,
+    &quot;auth&quot;: &quot;custom-keys: x-functions-key&quot;,
+    &quot;command&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;Connection \&quot;maze-tool-function-key\&quot; created in project \&quot;maze-migration-lab\&quot;.&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;ai&quot;,
+        &quot;connection&quot;,
+        &quot;create&quot;,
+        &quot;maze-tool-function-key&quot;,
+        &quot;--kind&quot;,
+        &quot;remote-tool&quot;,
+        &quot;--target&quot;,
+        &quot;https://maze-tool-func-prav-ada483.azurewebsites.net&quot;,
+        &quot;--auth-type&quot;,
+        &quot;custom-keys&quot;,
+        &quot;--custom-key&quot;,
+        &quot;[redacted]&quot;,
+        &quot;--force&quot;,
+        &quot;-p&quot;,
+        &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    }
+  },
+  &quot;toolbox&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status&quot;: &quot;created&quot;,
+    &quot;name&quot;: &quot;maze-toolbox&quot;,
+    &quot;tool&quot;: &quot;maze_tool_api&quot;,
+    &quot;create&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;{\n  \&quot;endpoint\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1\&quot;,\n  \&quot;toolbox\&quot;: \&quot;maze-toolbox\&quot;,\n  \&quot;version\&quot;: \&quot;1\&quot;\n}&quot;,
+      &quot;stderr_tail&quot;: &quot;2026/08/26 21:09:43 toolbox create: resolved project endpoint https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab (source=flag)&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;ai&quot;,
+        &quot;toolbox&quot;,
+        &quot;create&quot;,
+        &quot;maze-toolbox&quot;,
+        &quot;--from-file&quot;,
+        &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/tools/phase11-foundry-toolbox/maze_toolbox.json&quot;,
+        &quot;--project-endpoint&quot;,
+        &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    },
+    &quot;create_payload&quot;: {
+      &quot;endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1&quot;,
+      &quot;toolbox&quot;: &quot;maze-toolbox&quot;,
+      &quot;version&quot;: &quot;1&quot;
+    },
+    &quot;show&quot;: {
+      &quot;exists&quot;: true,
+      &quot;command&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;           {\n                      \&quot;functionKey\&quot;: []\n                    }\n                  ],\n                  \&quot;summary\&quot;: \&quot;Return legal moves from the current maze position.\&quot;\n                }\n              },\n              \&quot;/api/maze/move\&quot;: {\n                \&quot;post\&quot;: {\n                  \&quot;operationId\&quot;: \&quot;moveInMaze\&quot;,\n                  \&quot;requestBody\&quot;: {\n                    \&quot;content\&quot;: {\n                      \&quot;application/json\&quot;: {\n                        \&quot;schema\&quot;: {\n                          \&quot;$ref\&quot;: \&quot;#/components/schemas/MoveRequest\&quot;\n                        }\n                      }\n                    },\n                    \&quot;required\&quot;: true\n                  },\n                  \&quot;responses\&quot;: {\n                    \&quot;200\&quot;: {\n                      \&quot;content\&quot;: {\n                        \&quot;application/json\&quot;: {\n                          \&quot;schema\&quot;: {\n                            \&quot;$ref\&quot;: \&quot;#/components/schemas/MazeToolResult\&quot;\n                          }\n                        }\n                      },\n                      \&quot;description\&quot;: \&quot;Validated move result\&quot;\n                    }\n                  },\n                  \&quot;security\&quot;: [\n                    {\n                      \&quot;functionKey\&quot;: []\n                    }\n                  ],\n                  \&quot;summary\&quot;: \&quot;Validate and apply a requested maze move.\&quot;\n                }\n              }\n            },\n            \&quot;servers\&quot;: [\n              {\n                \&quot;url\&quot;: \&quot;https://maze-tool-func-prav-ada483.azurewebsites.net\&quot;\n              }\n            ]\n          }\n        },\n        \&quot;type\&quot;: \&quot;openapi\&quot;\n      }\n    ],\n    \&quot;skills\&quot;: []\n  }\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;2026/08/26 21:09:45 toolbox show: resolved project endpoint https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab (source=flag)&quot;,
+        &quot;command&quot;: [
+          &quot;azd&quot;,
+          &quot;ai&quot;,
+          &quot;toolbox&quot;,
+          &quot;show&quot;,
+          &quot;maze-toolbox&quot;,
+          &quot;--project-endpoint&quot;,
+          &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      },
+      &quot;payload&quot;: {
+        &quot;endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1&quot;,
+        &quot;toolbox&quot;: {
+          &quot;id&quot;: &quot;toolbox_6324788d6484348b323e7677ee7cb78efa755fda&quot;,
+          &quot;name&quot;: &quot;maze-toolbox&quot;,
+          &quot;default_version&quot;: &quot;1&quot;
+        },
+        &quot;version&quot;: {
+          &quot;id&quot;: &quot;toolbox_6324788d6484348b323e7677ee7cb78efa755fda:1&quot;,
+          &quot;name&quot;: &quot;maze-toolbox&quot;,
+          &quot;version&quot;: &quot;1&quot;,
+          &quot;description&quot;: &quot;Maze Tool OpenAPI toolbox for the Azure Foundry migration learning lab.&quot;,
+          &quot;created_at&quot;: 1787792984,
+          &quot;tools&quot;: [
+            {
+              &quot;name&quot;: &quot;maze_tool_api&quot;,
+              &quot;openapi&quot;: {
+                &quot;auth&quot;: {
+                  &quot;security_scheme&quot;: {
+                    &quot;project_connection_id&quot;: &quot;maze-tool-function-key&quot;
+                  },
+                  &quot;type&quot;: &quot;project_connection&quot;
+                },
+                &quot;name&quot;: &quot;maze_tool_api&quot;,
+                &quot;spec&quot;: {
+                  &quot;components&quot;: {
+                    &quot;schemas&quot;: {
+                      &quot;InspectRequest&quot;: {
+                        &quot;properties&quot;: {
+                          &quot;maze_id&quot;: {
+                            &quot;enum&quot;: [
+                              &quot;maze_a&quot;,
+                              &quot;maze_b&quot;
+                            ],
+                            &quot;type&quot;: &quot;string&quot;
+                          },
+                          &quot;position&quot;: {
+                            &quot;items&quot;: {
+                              &quot;type&quot;: &quot;integer&quot;
+                            },
+                            &quot;maxItems&quot;: 2,
+                            &quot;minItems&quot;: 2,
+                            &quot;type&quot;: &quot;array&quot;
+                          }
+                        },
+                        &quot;required&quot;: [
+                          &quot;maze_id&quot;,
+                          &quot;position&quot;
+                        ],
+                        &quot;type&quot;: &quot;object&quot;
+                      },
+                      &quot;MazeToolResult&quot;: {
+                        &quot;properties&quot;: {
+                          &quot;error&quot;: {
+                            &quot;type&quot;: &quot;string&quot;
+                          },
+                          &quot;legal_moves&quot;: {
+                            &quot;items&quot;: {
+                              &quot;type&quot;: &quot;string&quot;
+                            },
+                            &quot;type&quot;: &quot;array&quot;
+                          },
+                          &quot;maze_id&quot;: {
+                            &quot;type&quot;: &quot;string&quot;
+                          },
+                          &quot;new_position&quot;: {
+                            &quot;items&quot;: {
+                              &quot;type&quot;: &quot;integer&quot;
+                            },
+                            &quot;type&quot;: &quot;array&quot;
+                          },
+                          &quot;ok&quot;: {
+                            &quot;type&quot;: &quot;boolean&quot;
+                          },
+                          &quot;position&quot;: {
+                            &quot;items&quot;: {
+                              &quot;type&quot;: &quot;integer&quot;
+                            },
+                            &quot;type&quot;: &quot;array&quot;
+                          }
+                        },
+                        &quot;required&quot;: [
+                          &quot;ok&quot;,
+                          &quot;maze_id&quot;,
+                          &quot;position&quot;,
+                          &quot;legal_moves&quot;
+                        ],
+                        &quot;type&quot;: &quot;object&quot;
+                      },
+                      &quot;MoveRequest&quot;: {
+                        &quot;properties&quot;: {
+                          &quot;maze_id&quot;: {
+                            &quot;enum&quot;: [
+                              &quot;maze_a&quot;,
+                              &quot;maze_b&quot;
+                            ],
+                            &quot;type&quot;: &quot;string&quot;
+                          },
+                          &quot;move&quot;: {
+                            &quot;enum&quot;: [
+                              &quot;north&quot;,
+                              &quot;south&quot;,
+                              &quot;west&quot;,
+                              &quot;east&quot;
+                            ],
+                            &quot;type&quot;: &quot;string&quot;
+                          },
+                          &quot;position&quot;: {
+                            &quot;items&quot;: {
+                              &quot;type&quot;: &quot;integer&quot;
+                            },
+                            &quot;maxItems&quot;: 2,
+                            &quot;minItems&quot;: 2,
+                            &quot;type&quot;: &quot;array&quot;
+                          }
+                        },
+                        &quot;required&quot;: [
+                          &quot;maze_id&quot;,
+                          &quot;position&quot;,
+                          &quot;move&quot;
+                        ],
+                        &quot;type&quot;: &quot;object&quot;
+                      }
+                    },
+                    &quot;securitySchemes&quot;: {
+                      &quot;functionKey&quot;: {
+                        &quot;in&quot;: &quot;header&quot;,
+                        &quot;name&quot;: &quot;x-functions-key&quot;,
+                        &quot;type&quot;: &quot;apiKey&quot;
+                      }
+                    }
+                  },
+                  &quot;info&quot;: {
+                    &quot;description&quot;: &quot;External Maze Tool for inspect and move validation.&quot;,
+                    &quot;title&quot;: &quot;Maze Tool API&quot;,
+                    &quot;version&quot;: &quot;1.0.0&quot;
+                  },
+                  &quot;openapi&quot;: &quot;3.0.3&quot;,
+                  &quot;paths&quot;: {
+                    &quot;/api/maze/inspect&quot;: {
+                      &quot;post&quot;: {
+                        &quot;operationId&quot;: &quot;inspectMaze&quot;,
+                        &quot;requestBody&quot;: {
+                          &quot;content&quot;: {
+                            &quot;application/json&quot;: {
+                              &quot;schema&quot;: {
+                                &quot;$ref&quot;: &quot;#/components/schemas/InspectRequest&quot;
+                              }
+                            }
+                          },
+                          &quot;required&quot;: true
+                        },
+                        &quot;responses&quot;: {
+                          &quot;200&quot;: {
+                            &quot;content&quot;: {
+                              &quot;application/json&quot;: {
+                                &quot;schema&quot;: {
+                                  &quot;$ref&quot;: &quot;#/components/schemas/MazeToolResult&quot;
+                                }
+                              }
+                            },
+                            &quot;description&quot;: &quot;Legal moves&quot;
+                          }
+                        },
+                        &quot;security&quot;: [
+                          {
+                            &quot;functionKey&quot;: []
+                          }
+                        ],
+                        &quot;summary&quot;: &quot;Return legal moves from the current maze position.&quot;
+                      }
+                    },
+                    &quot;/api/maze/move&quot;: {
+                      &quot;post&quot;: {
+                        &quot;operationId&quot;: &quot;moveInMaze&quot;,
+                        &quot;requestBody&quot;: {
+                          &quot;content&quot;: {
+                            &quot;application/json&quot;: {
+                              &quot;schema&quot;: {
+                                &quot;$ref&quot;: &quot;#/components/schemas/MoveRequest&quot;
+                              }
+                            }
+                          },
+                          &quot;required&quot;: true
+                        },
+                        &quot;responses&quot;: {
+                          &quot;200&quot;: {
+                            &quot;content&quot;: {
+                              &quot;application/json&quot;: {
+                                &quot;schema&quot;: {
+                                  &quot;$ref&quot;: &quot;#/components/schemas/MazeToolResult&quot;
+                                }
+                              }
+                            },
+                            &quot;description&quot;: &quot;Validated move result&quot;
+                          }
+                        },
+                        &quot;security&quot;: [
+                          {
+                            &quot;functionKey&quot;: []
+                          }
+                        ],
+                        &quot;summary&quot;: &quot;Validate and apply a requested maze move.&quot;
+                      }
+                    }
+                  },
+                  &quot;servers&quot;: [
+                    {
+                      &quot;url&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net&quot;
+                    }
+                  ]
+                }
+              },
+              &quot;type&quot;: &quot;openapi&quot;
+            }
+          ],
+          &quot;skills&quot;: []
+        }
+      }
+    }
+  },
+  &quot;toolbox_list&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status&quot;: &quot;listed&quot;,
+    &quot;toolbox_names&quot;: [
+      &quot;maze-toolbox&quot;
+    ],
+    &quot;contains_maze_toolbox&quot;: true,
+    &quot;command&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;{\n  \&quot;toolboxes\&quot;: [\n    {\n      \&quot;default_version\&quot;: \&quot;1\&quot;,\n      \&quot;id\&quot;: \&quot;toolbox_6324788d6484348b323e7677ee7cb78efa755fda\&quot;,\n      \&quot;name\&quot;: \&quot;maze-toolbox\&quot;\n    }\n  ]\n}&quot;,
+      &quot;stderr_tail&quot;: &quot;2026/08/26 21:09:46 toolbox list: resolved project endpoint https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab (source=flag)&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;ai&quot;,
+        &quot;toolbox&quot;,
+        &quot;list&quot;,
+        &quot;--project-endpoint&quot;,
+        &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    }
+  },
+  &quot;runtime_usage&quot;: {
+    &quot;phase10_live_runtime&quot;: &quot;Hosted PydanticAI agent still calls the external Maze Tool through ExternalMazeToolProgram.&quot;,
+    &quot;phase11_registration&quot;: &quot;Foundry now has a managed toolbox/tool registration for the same Maze Tool contract.&quot;,
+    &quot;next_runtime_step&quot;: &quot;Switch the PydanticAI runtime from direct HTTP client to the Foundry toolbox MCP endpoint.&quot;,
+    &quot;mcp_endpoint_observed&quot;: true,
+    &quot;mcp_endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1&quot;
+  },
+  &quot;summary&quot;: {
+    &quot;foundry_toolbox_registered&quot;: true,
+    &quot;foundry_tool_connection_created&quot;: true,
+    &quot;portal_expected_location&quot;: &quot;Foundry project &gt; Tools &gt; Toolboxes tab; the individual OpenAPI tool is inside maze-toolbox.&quot;,
+    &quot;new_azure_compute_resources&quot;: 0,
+    &quot;new_toolboxes_created_or_reused&quot;: 1,
+    &quot;llm_calls_made&quot;: 0,
+    &quot;external_maze_function_reused&quot;: true,
+    &quot;next_phase&quot;: &quot;Use the Foundry toolbox MCP endpoint from the hosted PydanticAI runtime instead of the direct ExternalMazeToolProgram HTTP client.&quot;
+  }
+}</pre></details></section>
+    </div>
+  </main>
+</body>
+</html>

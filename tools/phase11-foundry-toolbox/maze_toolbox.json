@@ -1,0 +1,206 @@
+{
+  "description": "Maze Tool OpenAPI toolbox for the Azure Foundry migration learning lab.",
+  "tools": [
+    {
+      "type": "openapi",
+      "name": "maze_tool_api",
+      "openapi": {
+        "name": "maze_tool_api",
+        "spec": {
+          "openapi": "3.0.3",
+          "info": {
+            "title": "Maze Tool API",
+            "version": "1.0.0",
+            "description": "External Maze Tool for inspect and move validation."
+          },
+          "servers": [
+            {
+              "url": "https://maze-tool-func-prav-ada483.azurewebsites.net"
+            }
+          ],
+          "paths": {
+            "/api/maze/inspect": {
+              "post": {
+                "operationId": "inspectMaze",
+                "summary": "Return legal moves from the current maze position.",
+                "security": [
+                  {
+                    "functionKey": []
+                  }
+                ],
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/InspectRequest"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Legal moves",
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/MazeToolResult"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "/api/maze/move": {
+              "post": {
+                "operationId": "moveInMaze",
+                "summary": "Validate and apply a requested maze move.",
+                "security": [
+                  {
+                    "functionKey": []
+                  }
+                ],
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/MoveRequest"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Validated move result",
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/MazeToolResult"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "components": {
+            "securitySchemes": {
+              "functionKey": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "x-functions-key"
+              }
+            },
+            "schemas": {
+              "InspectRequest": {
+                "type": "object",
+                "required": [
+                  "maze_id",
+                  "position"
+                ],
+                "properties": {
+                  "maze_id": {
+                    "type": "string",
+                    "enum": [
+                      "maze_a",
+                      "maze_b"
+                    ]
+                  },
+                  "position": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "MoveRequest": {
+                "type": "object",
+                "required": [
+                  "maze_id",
+                  "position",
+                  "move"
+                ],
+                "properties": {
+                  "maze_id": {
+                    "type": "string",
+                    "enum": [
+                      "maze_a",
+                      "maze_b"
+                    ]
+                  },
+                  "position": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "move": {
+                    "type": "string",
+                    "enum": [
+                      "north",
+                      "south",
+                      "west",
+                      "east"
+                    ]
+                  }
+                }
+              },
+              "MazeToolResult": {
+                "type": "object",
+                "required": [
+                  "ok",
+                  "maze_id",
+                  "position",
+                  "legal_moves"
+                ],
+                "properties": {
+                  "ok": {
+                    "type": "boolean"
+                  },
+                  "maze_id": {
+                    "type": "string"
+                  },
+                  "position": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "legal_moves": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "new_position": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "error": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "auth": {
+          "type": "project_connection",
+          "security_scheme": {
+            "project_connection_id": "maze-tool-function-key"
+          }
+        }
+      }
+    }
+  ]
+}

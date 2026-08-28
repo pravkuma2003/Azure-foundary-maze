@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 10</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --amber:#9a6500; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    h3 { margin:0 0 8px; font-size:16px; }
+    p { margin:0; color:var(--muted); }
+    a { color:var(--blue); font-weight:800; text-decoration:none; }
+    .panel,.summary,.step,.metric { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:16px; }
+    .summary strong { display:block; font-size:26px; text-transform:capitalize; }
+    .stack { display:grid; gap:14px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .metric { box-shadow:none; }
+    .metric span,.step span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:6px; font-size:26px; }
+    .flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .step { box-shadow:none; min-height:150px; border-left:5px solid var(--blue); }
+    .step.tool { border-left-color:var(--green); background:#eef8f3; }
+    .step.note { border-left-color:var(--amber); background:#fff8e7; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#111827; background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    @media (max-width:980px) { header,.metrics,.flow { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 10 - External Azure Function Maze Tool</h1>
+        <p>Move the Maze Tool from an in-package program boundary to a separately hosted Azure Function tool while keeping the agent contract stable.</p>
+      </div>
+      <aside class="summary">
+        <span>Status</span>
+        <strong>complete</strong>
+        <p>External tool calls observed: 32.</p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Phase Metrics</h2>
+        <div class="metrics">
+          <div class="metric"><span>Function Apps Added</span><strong>1</strong></div>
+          <div class="metric"><span>Storage Added</span><strong>1</strong></div>
+          <div class="metric"><span>LLM Calls</span><strong>17</strong></div>
+          <div class="metric"><span>External Tool Calls</span><strong>32</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>External Tool Flow</h2>
+        <div class="flow">
+          <article class="step"><span>1. Foundry Agent</span><h3>Reasoning stays hosted</h3><p>The agent decides it needs maze state or a move validation.</p></article>
+          <article class="step tool"><span>2. HTTP Tool</span><h3>Azure Function</h3><p>The agent calls the Maze Tool over HTTP with a typed request.</p></article>
+          <article class="step"><span>3. Tool Result</span><h3>Typed JSON</h3><p>The Function returns legal moves, new position, or validation error.</p></article>
+          <article class="step note"><span>4. Trace</span><h3>Observable boundary</h3><p>The WebUI shows external-http tool events separately from LLM calls.</p></article>
+        </div>
+      </section>
+      <section class="panel"><h2>Architecture</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Before</td><td>Foundry hosted agent imported MazeToolProgram from its own source package.</td></tr><tr><td>After</td><td>Foundry hosted agent calls Maze Tool over HTTP using the same inspect/move contract.</td></tr><tr><td>External Tool Service</td><td>maze-tool-func-prav-ada483</td></tr><tr><td>Webui Service</td><td>maze-webui-func-prav-ada483</td></tr><tr><td>Auth</td><td>Azure Functions function key stored outside source and passed to hosted agent as an environment variable.</td></tr></tbody></table></section>
+      <section class="panel"><h2>Tool Contract</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Openapi</td><td>https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/openapi.json</td></tr><tr><td>Health</td><td>https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/health</td></tr><tr><td>Inspect</td><td>https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/inspect</td></tr><tr><td>Move</td><td>https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/move</td></tr></tbody></table></section>
+      <section class="panel"><h2>Tool Validation</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Health Status</td><td>200</td></tr><tr><td>Health</td><td>{&quot;status&quot;: &quot;ok&quot;, &quot;service&quot;: &quot;maze-tool-function&quot;}</td></tr><tr><td>Openapi Status</td><td>200</td></tr><tr><td>Openapi Title</td><td>Maze Tool API</td></tr><tr><td>Inspect Status</td><td>200</td></tr><tr><td>Inspect</td><td>{&quot;ok&quot;: true, &quot;maze_id&quot;: &quot;maze_a&quot;, &quot;position&quot;: [0, 0], &quot;legal_moves&quot;: [&quot;east&quot;]}</td></tr><tr><td>Move Status</td><td>200</td></tr><tr><td>Move</td><td>{&quot;ok&quot;: true, &quot;maze_id&quot;: &quot;maze_a&quot;, &quot;position&quot;: [0, 0], &quot;legal_moves&quot;: [&quot;east&quot;], &quot;new_position&quot;: [0, 1]}</td></tr><tr><td>Passed</td><td>True</td></tr></tbody></table></section>
+      <section class="panel"><h2>Live WebUI Validation</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status Code</td><td>200</td></tr><tr><td>Source</td><td>foundry-hosted-agent</td></tr><tr><td>Provider</td><td>foundry</td></tr><tr><td>Model</td><td>gpt41mini-maze</td></tr><tr><td>Llm Calls</td><td>17</td></tr><tr><td>External Maze Tool Enabled</td><td>True</td></tr><tr><td>External Maze Tool Calls</td><td>32</td></tr><tr><td>External Event Count</td><td>32</td></tr><tr><td>Maze Tool Boundary</td><td>ExternalMazeToolProgram</td></tr><tr><td>Events</td><td>96</td></tr><tr><td>Passed</td><td>True</td></tr></tbody></table></section>
+      <section class="panel"><h2>Report JSON</h2><details><summary>Open generated report</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 10,
+  &quot;phase_name&quot;: &quot;External Azure Function Maze Tool&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;learning_objective&quot;: &quot;Move the Maze Tool from an in-package program boundary to a separately hosted Azure Function tool while keeping the agent contract stable.&quot;,
+  &quot;architecture&quot;: {
+    &quot;before&quot;: &quot;Foundry hosted agent imported MazeToolProgram from its own source package.&quot;,
+    &quot;after&quot;: &quot;Foundry hosted agent calls Maze Tool over HTTP using the same inspect/move contract.&quot;,
+    &quot;external_tool_service&quot;: &quot;maze-tool-func-prav-ada483&quot;,
+    &quot;webui_service&quot;: &quot;maze-webui-func-prav-ada483&quot;,
+    &quot;auth&quot;: &quot;Azure Functions function key stored outside source and passed to hosted agent as an environment variable.&quot;
+  },
+  &quot;tool_contract&quot;: {
+    &quot;openapi&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/openapi.json&quot;,
+    &quot;health&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/health&quot;,
+    &quot;inspect&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/inspect&quot;,
+    &quot;move&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/move&quot;
+  },
+  &quot;package&quot;: {
+    &quot;source&quot;: &quot;tools/phase10-maze-tool-function&quot;,
+    &quot;zip&quot;: &quot;runs/phase10_maze_tool_function.zip&quot;,
+    &quot;compile&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;/usr/local/Caskroom/miniconda/base/bin/python3&quot;,
+        &quot;-m&quot;,
+        &quot;py_compile&quot;,
+        &quot;maze_common.py&quot;,
+        &quot;move/__init__.py&quot;,
+        &quot;inspect/__init__.py&quot;,
+        &quot;health/__init__.py&quot;,
+        &quot;openapi/__init__.py&quot;
+      ]
+    },
+    &quot;vendor_dependencies&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/tools/phase10-maze-tool-function/requirements.txt (line 1))\n  Using cached azure_functions-1.25.0-py3-none-any.whl.metadata (6.8 kB)\nCollecting werkzeug~=3.1.3 (from azure-functions&lt;2-&gt;-r /Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/tools/phase10-maze-tool-function/requirements.txt (line 1))\n  Using cached werkzeug-3.1.8-py3-none-any.whl.metadata (4.0 kB)\nCollecting markupsafe&gt;=2.1.1 (from werkzeug~=3.1.3-&gt;azure-functions&lt;2-&gt;-r /Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/tools/phase10-maze-tool-function/requirements.txt (line 1))\n  Using cached markupsafe-3.0.3-cp313-cp313-macosx_10_13_x86_64.whl.metadata (2.7 kB)\nUsing cached azure_functions-1.25.0-py3-none-any.whl (113 kB)\nUsing cached werkzeug-3.1.8-py3-none-any.whl (226 kB)\nUsing cached markupsafe-3.0.3-cp313-cp313-macosx_10_13_x86_64.whl (11 kB)\nInstalling collected packages: markupsafe, werkzeug, azure-functions\nSuccessfully installed azure-functions-1.25.0 markupsafe-3.0.3 werkzeug-3.1.8&quot;,
+      &quot;stderr_tail&quot;: &quot;ERROR: pip&#x27;s dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.\nstreamlit 1.47.0 requires pillow&lt;12,&gt;=7.1.0, but you have pillow 12.3.0 which is incompatible.&quot;,
+      &quot;command&quot;: [
+        &quot;/usr/local/Caskroom/miniconda/base/bin/python3&quot;,
+        &quot;-m&quot;,
+        &quot;pip&quot;,
+        &quot;install&quot;,
+        &quot;--target&quot;,
+        &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/tools/phase10-maze-tool-function/.python_packages/lib/site-packages&quot;,
+        &quot;-r&quot;,
+        &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/tools/phase10-maze-tool-function/requirements.txt&quot;
+      ]
+    }
+  },
+  &quot;deployment&quot;: {
+    &quot;storage&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;  \&quot;name\&quot;: \&quot;mazetoolpravada483\&quot;,\n  \&quot;networkRuleSet\&quot;: {\n    \&quot;bypass\&quot;: \&quot;None\&quot;,\n    \&quot;defaultAction\&quot;: \&quot;Allow\&quot;,\n    \&quot;ipRules\&quot;: [],\n    \&quot;resourceAccessRules\&quot;: null,\n    \&quot;virtualNetworkRules\&quot;: []\n  },\n  \&quot;primaryEndpoints\&quot;: {\n    \&quot;blob\&quot;: \&quot;https://mazetoolpravada483.blob.core.windows.net/\&quot;,\n    \&quot;dfs\&quot;: \&quot;https://mazetoolpravada483.dfs.core.windows.net/\&quot;,\n    \&quot;file\&quot;: \&quot;https://mazetoolpravada483.file.core.windows.net/\&quot;,\n    \&quot;internetEndpoints\&quot;: null,\n    \&quot;microsoftEndpoints\&quot;: null,\n    \&quot;queue\&quot;: \&quot;https://mazetoolpravada483.queue.core.windows.net/\&quot;,\n    \&quot;table\&quot;: \&quot;https://mazetoolpravada483.table.core.windows.net/\&quot;,\n    \&quot;web\&quot;: \&quot;https://mazetoolpravada483.z20.web.core.windows.net/\&quot;\n  },\n  \&quot;primaryLocation\&quot;: \&quot;eastus2\&quot;,\n  \&quot;privateEndpointConnections\&quot;: [],\n  \&quot;provisioningState\&quot;: \&quot;Succeeded\&quot;,\n  \&quot;publicNetworkAccess\&quot;: null,\n  \&quot;resourceGroup\&quot;: \&quot;rg-maze-foundry-lab\&quot;,\n  \&quot;routingPreference\&quot;: null,\n  \&quot;sasPolicy\&quot;: null,\n  \&quot;secondaryEndpoints\&quot;: null,\n  \&quot;secondaryLocation\&quot;: null,\n  \&quot;sku\&quot;: {\n    \&quot;name\&quot;: \&quot;Standard_LRS\&quot;,\n    \&quot;tier\&quot;: \&quot;Standard\&quot;\n  },\n  \&quot;statusOfPrimary\&quot;: \&quot;available\&quot;,\n  \&quot;statusOfSecondary\&quot;: null,\n  \&quot;storageAccountSkuConversionStatus\&quot;: null,\n  \&quot;tags\&quot;: {},\n  \&quot;type\&quot;: \&quot;Microsoft.Storage/storageAccounts\&quot;\n}&quot;,
+      &quot;stderr_tail&quot;: &quot;WARNING: The public access to all blobs or containers in the storage account will be disallowed by default in the future, which means default value for --allow-blob-public-access is still null but will be equivalent to false.&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;storage&quot;,
+        &quot;account&quot;,
+        &quot;create&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;mazetoolpravada483&quot;,
+        &quot;--location&quot;,
+        &quot;eastus2&quot;,
+        &quot;--sku&quot;,
+        &quot;Standard_LRS&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    },
+    &quot;functionapp_create&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;g\&quot;: null\n      }\n    ],\n    \&quot;scmIpSecurityRestrictionsDefaultAction\&quot;: null,\n    \&quot;scmIpSecurityRestrictionsUseMain\&quot;: null,\n    \&quot;scmMinTlsCipherSuite\&quot;: null,\n    \&quot;scmMinTlsVersion\&quot;: null,\n    \&quot;scmSupportedTlsCipherSuites\&quot;: null,\n    \&quot;scmType\&quot;: null,\n    \&quot;sitePort\&quot;: null,\n    \&quot;sitePrivateLinkHostEnabled\&quot;: null,\n    \&quot;storageType\&quot;: null,\n    \&quot;supportedTlsCipherSuites\&quot;: null,\n    \&quot;tracingOptions\&quot;: null,\n    \&quot;use32BitWorkerProcess\&quot;: null,\n    \&quot;virtualApplications\&quot;: null,\n    \&quot;vnetName\&quot;: null,\n    \&quot;vnetPrivatePortsCount\&quot;: null,\n    \&quot;vnetRouteAllEnabled\&quot;: null,\n    \&quot;webJobsEnabled\&quot;: false,\n    \&quot;webSocketsEnabled\&quot;: null,\n    \&quot;websiteTimeZone\&quot;: null,\n    \&quot;winAuthAdminState\&quot;: null,\n    \&quot;winAuthTenantState\&quot;: null,\n    \&quot;windowsConfiguredStacks\&quot;: null,\n    \&quot;windowsFxVersion\&quot;: null,\n    \&quot;xManagedServiceIdentityId\&quot;: null\n  },\n  \&quot;slotSwapStatus\&quot;: null,\n  \&quot;state\&quot;: \&quot;Running\&quot;,\n  \&quot;storageAccountRequired\&quot;: false,\n  \&quot;suspendedTill\&quot;: null,\n  \&quot;tags\&quot;: null,\n  \&quot;targetSwapSlot\&quot;: null,\n  \&quot;trafficManagerHostNames\&quot;: null,\n  \&quot;type\&quot;: \&quot;Microsoft.Web/sites\&quot;,\n  \&quot;usageState\&quot;: \&quot;Normal\&quot;,\n  \&quot;virtualNetworkSubnetId\&quot;: null,\n  \&quot;vnetContentShareEnabled\&quot;: false,\n  \&quot;vnetImagePullEnabled\&quot;: false,\n  \&quot;vnetRouteAllEnabled\&quot;: false\n}&quot;,
+      &quot;stderr_tail&quot;: &quot;WARNING: Your Linux function app &#x27;maze-tool-func-prav-ada483&#x27;, that uses a consumption plan has been successfully created but is not active until content is published using Azure Portal or the Functions Core Tools.\nWARNING: Application Insights \&quot;maze-tool-func-prav-ada483\&quot; was created for this Function App. You can visit https://portal.azure.com/#resource/subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/providers/microsoft.insights/components/maze-tool-func-prav-ada483/overview to view your Application Insights component\nWARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;functionapp&quot;,
+        &quot;create&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--consumption-plan-location&quot;,
+        &quot;eastus2&quot;,
+        &quot;--runtime&quot;,
+        &quot;python&quot;,
+        &quot;--runtime-version&quot;,
+        &quot;3.12&quot;,
+        &quot;--functions-version&quot;,
+        &quot;4&quot;,
+        &quot;--os-type&quot;,
+        &quot;Linux&quot;,
+        &quot;--storage-account&quot;,
+        &quot;mazetoolpravada483&quot;,
+        &quot;--name&quot;,
+        &quot;maze-tool-func-prav-ada483&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    },
+    &quot;settings&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  }\n]&quot;,
+      &quot;stderr_tail&quot;: &quot;WARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;functionapp&quot;,
+        &quot;config&quot;,
+        &quot;appsettings&quot;,
+        &quot;set&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;maze-tool-func-prav-ada483&quot;,
+        &quot;--settings&quot;,
+        &quot;[redacted]&quot;,
+        &quot;SCM_DO_BUILD_DURING_DEPLOYMENT=false&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    },
+    &quot;package_deploy&quot;: {
+      &quot;status&quot;: &quot;deployed&quot;,
+      &quot;storage_key&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;[redacted]&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;az&quot;,
+          &quot;storage&quot;,
+          &quot;account&quot;,
+          &quot;keys&quot;,
+          &quot;list&quot;,
+          &quot;--resource-group&quot;,
+          &quot;rg-maze-foundry-lab&quot;,
+          &quot;--account-name&quot;,
+          &quot;mazetoolpravada483&quot;,
+          &quot;--query&quot;,
+          &quot;[0].value&quot;,
+          &quot;--output&quot;,
+          &quot;tsv&quot;
+        ]
+      },
+      &quot;container&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;{\n  \&quot;created\&quot;: false\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;az&quot;,
+          &quot;storage&quot;,
+          &quot;container&quot;,
+          &quot;create&quot;,
+          &quot;--account-name&quot;,
+          &quot;mazetoolpravada483&quot;,
+          &quot;--account-key&quot;,
+          &quot;[redacted]&quot;,
+          &quot;--name&quot;,
+          &quot;packages&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      },
+      &quot;upload&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;{\n  \&quot;client_request_id\&quot;: \&quot;a73c1982-a1aa-11f1-b98e-acde48001122\&quot;,\n  \&quot;content_md5\&quot;: \&quot;PNSPuA5loK2KMQY1k/s0sA==\&quot;,\n  \&quot;date\&quot;: \&quot;2026-08-27T00:02:53+00:00\&quot;,\n  \&quot;encryption_key_sha256\&quot;: null,\n  \&quot;encryption_scope\&quot;: null,\n  \&quot;etag\&quot;: \&quot;\\\&quot;0x8DF03CE8B43B5EB\\\&quot;\&quot;,\n  \&quot;lastModified\&quot;: \&quot;2026-08-27T00:02:54+00:00\&quot;,\n  \&quot;request_id\&quot;: \&quot;28adfb14-701e-005b-26b7-357491000000\&quot;,\n  \&quot;request_server_encrypted\&quot;: true,\n  \&quot;version\&quot;: \&quot;2022-11-02\&quot;,\n  \&quot;version_id\&quot;: null\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;WARNING: Argument &#x27;--overwrite&#x27; is in preview and under development. Reference and support levels: https://aka.ms/CLI_refstatus\n\nAlive[################################################################]  100.0000%\nFinished[#############################################################]  100.0000%&quot;,
+        &quot;command&quot;: [
+          &quot;az&quot;,
+          &quot;storage&quot;,
+          &quot;blob&quot;,
+          &quot;upload&quot;,
+          &quot;--account-name&quot;,
+          &quot;mazetoolpravada483&quot;,
+          &quot;--account-key&quot;,
+          &quot;[redacted]&quot;,
+          &quot;--container-name&quot;,
+          &quot;packages&quot;,
+          &quot;--name&quot;,
+          &quot;phase10_maze_tool_function.zip&quot;,
+          &quot;--file&quot;,
+          &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase10_maze_tool_function.zip&quot;,
+          &quot;--overwrite&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      },
+      &quot;sas&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;[redacted]&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;az&quot;,
+          &quot;storage&quot;,
+          &quot;blob&quot;,
+          &quot;generate-sas&quot;,
+          &quot;--account-name&quot;,
+          &quot;mazetoolpravada483&quot;,
+          &quot;--account-key&quot;,
+          &quot;[redacted]&quot;,
+          &quot;--container-name&quot;,
+          &quot;packages&quot;,
+          &quot;--name&quot;,
+          &quot;phase10_maze_tool_function.zip&quot;,
+          &quot;--permissions&quot;,
+          &quot;r&quot;,
+          &quot;--expiry&quot;,
+          &quot;2027-08-27T00:02:55Z&quot;,
+          &quot;--output&quot;,
+          &quot;tsv&quot;
+        ]
+      },
+      &quot;settings&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_RUN_FROM_PACKAGE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  }\n]&quot;,
+        &quot;stderr_tail&quot;: &quot;WARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;,
+        &quot;command&quot;: [
+          &quot;az&quot;,
+          &quot;functionapp&quot;,
+          &quot;config&quot;,
+          &quot;appsettings&quot;,
+          &quot;set&quot;,
+          &quot;--resource-group&quot;,
+          &quot;rg-maze-foundry-lab&quot;,
+          &quot;--name&quot;,
+          &quot;maze-tool-func-prav-ada483&quot;,
+          &quot;--settings&quot;,
+          &quot;[redacted]&quot;,
+          &quot;FUNCTIONS_WORKER_RUNTIME=python&quot;,
+          &quot;SCM_DO_BUILD_DURING_DEPLOYMENT=false&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      },
+      &quot;package_blob&quot;: &quot;https://mazetoolpravada483.blob.core.windows.net/packages/phase10_maze_tool_function.zip&quot;
+    },
+    &quot;restart&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;functionapp&quot;,
+        &quot;restart&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;maze-tool-func-prav-ada483&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    },
+    &quot;status&quot;: &quot;deployed&quot;
+  },
+  &quot;function_key&quot;: {
+    &quot;returncode&quot;: 0,
+    &quot;stdout_tail&quot;: &quot;[redacted]&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;command&quot;: [
+      &quot;az&quot;,
+      &quot;functionapp&quot;,
+      &quot;keys&quot;,
+      &quot;list&quot;,
+      &quot;--resource-group&quot;,
+      &quot;rg-maze-foundry-lab&quot;,
+      &quot;--name&quot;,
+      &quot;maze-tool-func-prav-ada483&quot;,
+      &quot;--query&quot;,
+      &quot;functionKeys.default&quot;,
+      &quot;--output&quot;,
+      &quot;tsv&quot;
+    ]
+  },
+  &quot;tool_validation&quot;: {
+    &quot;health_status&quot;: 200,
+    &quot;health&quot;: {
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;service&quot;: &quot;maze-tool-function&quot;
+    },
+    &quot;openapi_status&quot;: 200,
+    &quot;openapi_title&quot;: &quot;Maze Tool API&quot;,
+    &quot;inspect_status&quot;: 200,
+    &quot;inspect&quot;: {
+      &quot;ok&quot;: true,
+      &quot;maze_id&quot;: &quot;maze_a&quot;,
+      &quot;position&quot;: [
+        0,
+        0
+      ],
+      &quot;legal_moves&quot;: [
+        &quot;east&quot;
+      ]
+    },
+    &quot;move_status&quot;: 200,
+    &quot;move&quot;: {
+      &quot;ok&quot;: true,
+      &quot;maze_id&quot;: &quot;maze_a&quot;,
+      &quot;position&quot;: [
+        0,
+        0
+      ],
+      &quot;legal_moves&quot;: [
+        &quot;east&quot;
+      ],
+      &quot;new_position&quot;: [
+        0,
+        1
+      ]
+    },
+    &quot;passed&quot;: true
+  },
+  &quot;hosted_agent_environment&quot;: {
+    &quot;base_url&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;env&quot;,
+        &quot;set&quot;,
+        &quot;MAZE_TOOL_BASE_URL&quot;,
+        &quot;https://maze-tool-func-prav-ada483.azurewebsites.net&quot;
+      ]
+    },
+    &quot;function_key&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;env&quot;,
+        &quot;set&quot;,
+        &quot;MAZE_TOOL_KEY&quot;,
+        &quot;[redacted]&quot;
+      ]
+    },
+    &quot;status&quot;: &quot;configured&quot;
+  },
+  &quot;hosted_agent_deployment&quot;: {
+    &quot;deploy&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot; (3/30)) [42s]\n  maze-monolithic-agent: Deploying (Polling agent status (4/30)) [52s]\n  maze-monolithic-agent: Deploying (Polling agent status (5/30)) [1m3s]\n  maze-monolithic-agent: Deploying (Registering agent environment variables) [1m3s]\n  maze-monolithic-agent: Done [1m3s]\n- Agent playground (portal): https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-monolithic-agent/build?version=7 \n- Agent endpoint (responses): https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-monolithic-agent/endpoint/protocols/openai/responses?api-version=v1 \n  \nNext:\n  azd ai agent show maze-monolithic-agent\n  verify it&#x27;s running\n\n  see README.md\n  find the sample-specific payload\n\n  azd ai agent invoke maze-monolithic-agent &#x27;&lt;payload&gt;&#x27;\n  test with the sample-specific payload\n\n\nSUCCESS: Your application was deployed to Azure in 1 minute 3 seconds.\nYou can view the resources created under the resource group rg-maze-foundry-lab in Azure Portal:\nhttps://portal.azure.com/#@/resource/subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/overview&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;deploy&quot;,
+        &quot;maze-monolithic-agent&quot;,
+        &quot;--no-prompt&quot;,
+        &quot;--timeout&quot;,
+        &quot;1200&quot;
+      ]
+    },
+    &quot;show&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;OVIDER\&quot;: \&quot;foundry\&quot;,\n      \&quot;MAZE_TOOL_BASE_URL\&quot;: \&quot;https://maze-tool-func-prav-ada483.azurewebsites.net\&quot;,\n      \&quot;MAZE_TOOL_KEY\&quot;: \&quot;[redacted]\&quot;\n    },\n    \&quot;kind\&quot;: \&quot;hosted\&quot;,\n    \&quot;memory\&quot;: \&quot;1Gi\&quot;,\n    \&quot;protocol_versions\&quot;: [\n      {\n        \&quot;protocol\&quot;: \&quot;responses\&quot;,\n        \&quot;version\&quot;: \&quot;2.0.0\&quot;\n      }\n    ]\n  },\n  \&quot;status\&quot;: \&quot;active\&quot;,\n  \&quot;instance_identity\&quot;: {\n    \&quot;principal_id\&quot;: \&quot;ef0c0ce9-ae88-416e-8619-637a4d6f4c96\&quot;,\n    \&quot;client_id\&quot;: \&quot;ef0c0ce9-ae88-416e-8619-637a4d6f4c96\&quot;\n  },\n  \&quot;blueprint\&quot;: {\n    \&quot;principal_id\&quot;: \&quot;738b802b-2d1f-403f-9b1b-9b4e3ddea242\&quot;,\n    \&quot;client_id\&quot;: \&quot;c0c63855-04b5-443a-93c7-9efca45095ec\&quot;\n  },\n  \&quot;blueprint_reference\&quot;: {\n    \&quot;type\&quot;: \&quot;ManagedAgentIdentityBlueprint\&quot;,\n    \&quot;blueprint_id\&quot;: \&quot;maze-monolithic-agent-d11ba\&quot;\n  },\n  \&quot;agent_guid\&quot;: \&quot;d11ba0c6-2ac6-4a60-8f37-617d5f7066bd\&quot;,\n  \&quot;playground_url\&quot;: \&quot;https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-monolithic-agent/build?version=7\&quot;,\n  \&quot;agent_endpoints\&quot;: {\n    \&quot;responses\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-monolithic-agent/endpoint/protocols/openai/responses?api-version=v1\&quot;\n  }\n}&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;ai&quot;,
+        &quot;agent&quot;,
+        &quot;show&quot;,
+        &quot;maze-monolithic-agent&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    },
+    &quot;active_version&quot;: &quot;7&quot;,
+    &quot;status&quot;: &quot;deployed&quot;
+  },
+  &quot;webui_sample_update&quot;: {
+    &quot;returncode&quot;: 0,
+    &quot;trace_created&quot;: true,
+    &quot;external_event_count&quot;: 32,
+    &quot;summary&quot;: {
+      &quot;status&quot;: &quot;complete&quot;,
+      &quot;implemented_scope&quot;: &quot;Part II Phase 1-7 starter deployment&quot;,
+      &quot;llm_call_budget&quot;: 25,
+      &quot;llm_call_budget_used&quot;: 0,
+      &quot;llm_call_budget_remaining&quot;: 25,
+      &quot;reasoning_agents&quot;: 3,
+      &quot;pydantic_ai_reasoning_agents&quot;: 3,
+      &quot;deterministic_orchestrators&quot;: 1,
+      &quot;deterministic_workers&quot;: 0,
+      &quot;team_memory_components&quot;: 1,
+      &quot;local_memory_components&quot;: 2,
+      &quot;analyst_llm_calls&quot;: 0,
+      &quot;worker_agent_llm_calls&quot;: 0,
+      &quot;worker_agent_a_llm_calls&quot;: 0,
+      &quot;worker_agent_b_llm_calls&quot;: 0,
+      &quot;worker_move_decision_calls&quot;: 0,
+      &quot;worker_policy_setup_calls&quot;: 0,
+      &quot;orchestrator_llm_calls&quot;: 0,
+      &quot;global_planning_owner&quot;: &quot;Analyst Agent&quot;,
+      &quot;local_planning_owner&quot;: &quot;Worker Agent A and Worker Agent B&quot;,
+      &quot;shared_memory_owner&quot;: &quot;Team Memory&quot;,
+      &quot;local_memory_owner&quot;: &quot;each assigned Worker Agent&quot;,
+      &quot;synchronization_owner&quot;: &quot;each Worker Agent under Analyst policy&quot;,
+      &quot;team_memory_writes&quot;: 8,
+      &quot;local_memory_writes&quot;: 18,
+      &quot;sync_evaluations&quot;: 18,
+      &quot;promoted_discoveries&quot;: 6,
+      &quot;retained_local_discoveries&quot;: 12,
+      &quot;memory_boundary_established&quot;: true,
+      &quot;synchronization_policy_established&quot;: true,
+      &quot;maze_a_tool_calls&quot;: 16,
+      &quot;maze_b_tool_calls&quot;: 16,
+      &quot;maze_b_deterministic_tool_calls&quot;: 0,
+      &quot;planning_boundary_established&quot;: true,
+      &quot;tool_boundary_enforced&quot;: true,
+      &quot;maze_tool_boundary_extracted&quot;: true,
+      &quot;maze_tool_boundary_name&quot;: &quot;ExternalMazeToolProgram&quot;,
+      &quot;maze_tool_boundary_location&quot;: &quot;external Azure Function&quot;,
+      &quot;external_maze_tool_calls&quot;: 32,
+      &quot;external_maze_tool_enabled&quot;: true,
+      &quot;separate_azure_tool_service_created&quot;: true,
+      &quot;worker_agents_introduced&quot;: 2,
+      &quot;worker_agent_b_introduced&quot;: true,
+      &quot;next_phase&quot;: &quot;Move one Worker Agent into its own hosted boundary after the MazeTool program interface is stable.&quot;,
+      &quot;elapsed_seconds&quot;: 5.085
+    },
+    &quot;sample_trace_refreshed&quot;: true
+  },
+  &quot;live_webui_validation&quot;: {
+    &quot;status_code&quot;: 200,
+    &quot;source&quot;: &quot;foundry-hosted-agent&quot;,
+    &quot;provider&quot;: &quot;foundry&quot;,
+    &quot;model&quot;: &quot;gpt41mini-maze&quot;,
+    &quot;llm_calls&quot;: 17,
+    &quot;external_maze_tool_enabled&quot;: true,
+    &quot;external_maze_tool_calls&quot;: 32,
+    &quot;external_event_count&quot;: 32,
+    &quot;maze_tool_boundary&quot;: &quot;ExternalMazeToolProgram&quot;,
+    &quot;events&quot;: 96,
+    &quot;passed&quot;: true
+  },
+  &quot;summary&quot;: {
+    &quot;external_maze_tool_created&quot;: true,
+    &quot;external_maze_tool_validated&quot;: true,
+    &quot;hosted_agent_uses_external_tool&quot;: true,
+    &quot;external_maze_tool_calls_observed&quot;: 32,
+    &quot;new_azure_resources_created&quot;: 2,
+    &quot;new_function_apps_created&quot;: 1,
+    &quot;new_storage_accounts_created&quot;: 1,
+    &quot;llm_calls_observed&quot;: 17,
+    &quot;additional_idle_cost&quot;: &quot;Function App Consumption execution remains near zero at lab scale; new Standard_LRS storage adds small storage cost.&quot;,
+    &quot;next_phase&quot;: &quot;Move Worker Agent A into its own Foundry-hosted agent and keep it calling the external Maze Tool contract.&quot;
+  }
+}</pre></details></section>
+    </div>
+  </main>
+</body>
+</html>

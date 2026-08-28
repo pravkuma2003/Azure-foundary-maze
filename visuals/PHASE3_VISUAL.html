@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 3</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --amber:#a86a00; --red:#b91c1c; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1180px, calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    p { margin:0; color:var(--muted); }
+    .panel,.summary,.gate { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); }
+    .summary,.panel { padding:16px; }
+    .summary strong { display:block; font-size:30px; text-transform:capitalize; }
+    .metrics,.gates { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    .metric { border:1px solid var(--line); border-radius:8px; padding:14px; background:#fff; }
+    .metric span,.gate span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:6px; font-size:26px; }
+    .gate { padding:14px; box-shadow:none; border-left:5px solid var(--blue); }
+    .gate span { color:var(--blue); }
+    .gate span:first-child { margin-bottom:4px; }
+    .gate:has(span:first-child:not(:only-child)) { border-left-color:var(--blue); }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#111827; background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    .stack { display:grid; gap:14px; }
+    @media (max-width:900px) { header,.metrics,.gates { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 3 - Azure Login and Subscription Readiness</h1>
+        <p>Verify local Azure auth and tooling before creating any Foundry resources.</p>
+      </div>
+      <aside class="summary">
+        <span>Status</span>
+        <strong>complete</strong>
+        <p>Azure resources created: 0. Cost: $0.</p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Readiness Metrics</h2>
+        <div class="metrics">
+          <div class="metric"><span>Azure CLI</span><strong>yes</strong></div>
+          <div class="metric"><span>az login</span><strong>yes</strong></div>
+          <div class="metric"><span>azd installed</span><strong>yes</strong></div>
+          <div class="metric"><span>azd login</span><strong>yes</strong></div>
+          <div class="metric"><span>Subscriptions</span><strong>96</strong></div>
+          <div class="metric"><span>Azure Cost</span><strong>$0</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Readiness Gates</h2>
+        <div class="gates"><article class='gate'><span>pass</span><strong>Azure CLI installed</strong><p>/usr/local/bin/az</p></article><article class='gate'><span>pass</span><strong>Azure CLI authenticated</strong><p>az account show returned an account.</p></article><article class='gate'><span>pass</span><strong>Personal subscription visible</strong><p>Subscription name containing &#x27;Visual Studio Enterprise Subscription&#x27; found.</p></article><article class='gate'><span>pass</span><strong>Azure Developer CLI installed</strong><p>/usr/local/bin/azd</p></article><article class='gate'><span>pass</span><strong>Azure Developer CLI authenticated</strong><p>azd auth status is authenticated.</p></article><article class='gate'><span>pass</span><strong>Budget command available</strong><p>az consumption budget command group is available.</p></article><article class='gate'><span>pass</span><strong>Azure resources created</strong><p>None. Phase 3 is readiness only.</p></article></div>
+      </section>
+      <section class="panel">
+        <h2>Visible Subscriptions</h2>
+        <table>
+          <thead><tr><th>Name</th><th>State</th><th>Default</th><th>Subscription ID</th></tr></thead>
+          <tbody><tr><td>Visual Studio Enterprise Subscription</td><td>Enabled</td><td>True</td><td>0ecd...9aa9</td></tr></tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <h2>Commands</h2>
+        <table>
+          <thead><tr><th>Purpose</th><th>Command</th></tr></thead>
+          <tbody><tr><td>Azure Login</td><td><code>az login --tenant cciepraveenyahoo.onmicrosoft.com --use-device-code</code></td></tr><tr><td>Select Subscription</td><td><code>az account set --subscription &quot;Visual Studio Enterprise Subscription&quot;</code></td></tr><tr><td>Azd Login</td><td><code>azd auth login --use-device-code</code></td></tr><tr><td>Azd Status</td><td><code>azd auth status</code></td></tr><tr><td>Budget Review</td><td><code>az consumption budget list --output table</code></td></tr></tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <h2>Next Phase</h2>
+        <p>Create or select one Foundry project and one model deployment only after readiness gates pass.</p>
+      </section>
+      <section class="panel">
+        <h2>Readiness JSON</h2>
+        <details><summary>Open generated readiness report</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 3,
+  &quot;phase_name&quot;: &quot;Azure Login and Subscription Readiness&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;target_tenant_hint&quot;: &quot;cciepraveenyahoo.onmicrosoft.com&quot;,
+  &quot;target_subscription_hint&quot;: &quot;Visual Studio Enterprise Subscription&quot;,
+  &quot;summary&quot;: {
+    &quot;azure_cli_installed&quot;: true,
+    &quot;azure_cli_logged_in&quot;: true,
+    &quot;azd_installed&quot;: true,
+    &quot;azd_logged_in&quot;: true,
+    &quot;visible_subscription_count&quot;: 96,
+    &quot;relevant_subscription_count&quot;: 1,
+    &quot;target_subscription_visible&quot;: true,
+    &quot;azure_resources_created&quot;: 0,
+    &quot;estimated_azure_cost&quot;: &quot;$0&quot;,
+    &quot;next_phase&quot;: &quot;Create or select one Foundry project and one model deployment only after readiness gates pass.&quot;
+  },
+  &quot;selected_account&quot;: {
+    &quot;name&quot;: &quot;Visual Studio Enterprise Subscription&quot;,
+    &quot;state&quot;: &quot;Enabled&quot;,
+    &quot;is_default&quot;: true,
+    &quot;subscription_id_masked&quot;: &quot;0ecd...9aa9&quot;,
+    &quot;tenant_id_masked&quot;: &quot;f218...d62e&quot;,
+    &quot;user_type&quot;: &quot;user&quot;
+  },
+  &quot;visible_subscriptions&quot;: [
+    {
+      &quot;name&quot;: &quot;Visual Studio Enterprise Subscription&quot;,
+      &quot;state&quot;: &quot;Enabled&quot;,
+      &quot;is_default&quot;: true,
+      &quot;subscription_id_masked&quot;: &quot;0ecd...9aa9&quot;,
+      &quot;tenant_id_masked&quot;: &quot;f218...d62e&quot;,
+      &quot;user_type&quot;: &quot;user&quot;
+    }
+  ],
+  &quot;readiness_gates&quot;: [
+    {
+      &quot;name&quot;: &quot;Azure CLI installed&quot;,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;detail&quot;: &quot;/usr/local/bin/az&quot;
+    },
+    {
+      &quot;name&quot;: &quot;Azure CLI authenticated&quot;,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;detail&quot;: &quot;az account show returned an account.&quot;
+    },
+    {
+      &quot;name&quot;: &quot;Personal subscription visible&quot;,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;detail&quot;: &quot;Subscription name containing &#x27;Visual Studio Enterprise Subscription&#x27; found.&quot;
+    },
+    {
+      &quot;name&quot;: &quot;Azure Developer CLI installed&quot;,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;detail&quot;: &quot;/usr/local/bin/azd&quot;
+    },
+    {
+      &quot;name&quot;: &quot;Azure Developer CLI authenticated&quot;,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;detail&quot;: &quot;azd auth status is authenticated.&quot;
+    },
+    {
+      &quot;name&quot;: &quot;Budget command available&quot;,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;detail&quot;: &quot;az consumption budget command group is available.&quot;
+    },
+    {
+      &quot;name&quot;: &quot;Azure resources created&quot;,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;detail&quot;: &quot;None. Phase 3 is readiness only.&quot;
+    }
+  ],
+  &quot;commands&quot;: {
+    &quot;azure_login&quot;: &quot;az login --tenant cciepraveenyahoo.onmicrosoft.com --use-device-code&quot;,
+    &quot;select_subscription&quot;: &quot;az account set --subscription \&quot;Visual Studio Enterprise Subscription\&quot;&quot;,
+    &quot;azd_login&quot;: &quot;azd auth login --use-device-code&quot;,
+    &quot;azd_status&quot;: &quot;azd auth status&quot;,
+    &quot;budget_review&quot;: &quot;az consumption budget list --output table&quot;
+  },
+  &quot;tool_versions&quot;: {
+    &quot;az&quot;: {
+      &quot;azure-cli&quot;: &quot;2.53.1&quot;,
+      &quot;azure-cli-core&quot;: &quot;2.53.1&quot;,
+      &quot;azure-cli-telemetry&quot;: &quot;1.1.0&quot;,
+      &quot;extensions&quot;: {
+        &quot;resource-graph&quot;: &quot;2.1.1&quot;
+      }
+    },
+    &quot;azd&quot;: &quot;azd version 1.31.2 (commit 3440050737c18537ae6cdbd1d64b98c594c495ad) (stable)&quot;
+  },
+  &quot;command_errors&quot;: {
+    &quot;az_version&quot;: &quot;&quot;,
+    &quot;az_account_show&quot;: &quot;&quot;,
+    &quot;az_account_list&quot;: &quot;&quot;,
+    &quot;azd_version&quot;: &quot;&quot;,
+    &quot;azd_auth_status&quot;: &quot;&quot;
+  }
+}</pre></details>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

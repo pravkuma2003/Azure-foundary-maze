@@ -1,0 +1,88 @@
+name: phase13-split-role-agents
+metadata:
+  template: phase13-split-role-agents@0.1.0
+services:
+  maze-migration-lab:
+    host: azure.ai.project
+    endpoint: https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab
+  maze-analyst-agent:
+    project: .
+    host: azure.ai.agent
+    language: python
+    uses:
+      - maze-migration-lab
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: gpt41mini-maze
+      FOUNDRY_MODEL_DEPLOYMENT: gpt41mini-maze
+      FOUNDRY_PROJECT_ENDPOINT: https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab
+      MAZE_PROVIDER: foundry
+      MAZE_HOSTED_ROLE: analyst
+      MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+    codeConfiguration:
+      dependencyResolution: remote_build
+      entryPoint: main.py
+      runtime: python_3_13
+    container:
+      resources:
+        cpu: "0.5"
+        memory: "1Gi"
+    kind: hosted
+    name: maze-analyst-agent
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    startupCommand: python main.py --provider foundry --role analyst
+  maze-worker-agent-a:
+    project: .
+    host: azure.ai.agent
+    language: python
+    uses:
+      - maze-migration-lab
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: gpt41mini-maze
+      FOUNDRY_MODEL_DEPLOYMENT: gpt41mini-maze
+      FOUNDRY_PROJECT_ENDPOINT: https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab
+      MAZE_PROVIDER: foundry
+      MAZE_HOSTED_ROLE: worker_a
+      MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+    codeConfiguration:
+      dependencyResolution: remote_build
+      entryPoint: main.py
+      runtime: python_3_13
+    container:
+      resources:
+        cpu: "0.5"
+        memory: "1Gi"
+    kind: hosted
+    name: maze-worker-agent-a
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    startupCommand: python main.py --provider foundry --role worker_a
+  maze-worker-agent-b:
+    project: .
+    host: azure.ai.agent
+    language: python
+    uses:
+      - maze-migration-lab
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: gpt41mini-maze
+      FOUNDRY_MODEL_DEPLOYMENT: gpt41mini-maze
+      FOUNDRY_PROJECT_ENDPOINT: https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab
+      MAZE_PROVIDER: foundry
+      MAZE_HOSTED_ROLE: worker_b
+      MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+    codeConfiguration:
+      dependencyResolution: remote_build
+      entryPoint: main.py
+      runtime: python_3_13
+    container:
+      resources:
+        cpu: "0.5"
+        memory: "1Gi"
+    kind: hosted
+    name: maze-worker-agent-b
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    startupCommand: python main.py --provider foundry --role worker_b

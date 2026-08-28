@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+.venv-phase6/
+.azure/
+.env
+*.tmp
+*.zip
+.DS_Store
+runs/
+exports/
+hosted/phase7-monolithic-maze-agent/

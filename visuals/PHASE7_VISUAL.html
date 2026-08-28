@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 7</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --amber:#9a6500; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1180px, calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    h3 { margin:0 0 8px; font-size:16px; }
+    p { margin:0; color:var(--muted); }
+    a { color:var(--blue); font-weight:800; text-decoration:none; }
+    .panel,.summary,.flow-step { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:16px; }
+    .summary strong { display:block; font-size:26px; text-transform:capitalize; }
+    .stack { display:grid; gap:14px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .metric { border:1px solid var(--line); border-radius:8px; padding:14px; background:#fff; }
+    .metric span,.flow-step span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:6px; font-size:26px; }
+    .flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .flow-step { box-shadow:none; min-height:130px; border-left:5px solid var(--blue); }
+    .flow-step.local { border-left-color:var(--amber); }
+    .flow-step.done { border-left-color:var(--green); }
+    .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    ul { margin:8px 0 0; padding-left:20px; color:#17202a; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#111827; background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    .note { border-left:5px solid var(--amber); background:#fff8e7; }
+    .pass { border-left:5px solid var(--green); background:#eef8f3; }
+    @media (max-width:980px) { header,.metrics,.flow,.two { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 7 - Monolithic Hosted Runtime</h1>
+        <p>Move agents, worker logic, tools, orchestrator, and in-process memory together behind one Foundry-hosted boundary.</p>
+      </div>
+      <aside class="summary">
+        <span>Status</span>
+        <strong>deployed rbac action required</strong>
+        <p>Hosted agents created: 1.</p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Phase Metrics</h2>
+        <div class="metrics">
+          <div class="metric"><span>Package Created</span><strong>yes</strong></div>
+          <div class="metric"><span>Local Validation</span><strong>pass</strong></div>
+          <div class="metric"><span>Foundry Calls</span><strong>1</strong></div>
+          <div class="metric"><span>Hosted Agents</span><strong>1</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Hosted Boundary</h2>
+        <div class="flow">
+          <article class="flow-step local"><span>1. Existing App</span><h3>Maze runtime</h3><p>The exported local curriculum remains the source of truth.</p></article>
+          <article class="flow-step"><span>2. Package</span><h3>One source bundle</h3><p>Agents, tools, workers, orchestrator, and memory are carried together.</p></article>
+          <article class="flow-step"><span>3. Foundry Host</span><h3>One hosted agent</h3><p>The package is shaped for a minimal hosted-agent runtime.</p></article>
+          <article class="flow-step done"><span>4. Later Split</span><h3>Azure-native pieces</h3><p>Tool, memory, and worker splitting are intentionally deferred.</p></article>
+        </div>
+      </section>
+      <section class="two">
+        <article class="panel pass">
+          <h2>Included Together</h2>
+          <ul><li>Analyst Agent</li><li>Worker Agent A</li><li>Worker Agent B</li><li>Orchestrator</li><li>Maze Tool</li><li>Team Memory / trace state</li></ul>
+        </article>
+        <article class="panel">
+          <h2>Package Files</h2>
+          <p><code>hosted/phase7-monolithic-maze-agent</code></p>
+          <ul><li>main.py</li><li>requirements.txt</li><li>azure.yaml</li><li>src/reasoning_curriculum.py</li><li>src/provider_config.py</li></ul>
+        </article>
+      </section>
+      <section class="panel">
+        <h2>Local Package Validation</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Command</td><td>[&quot;/usr/local/Caskroom/miniconda/base/bin/python3&quot;, &quot;main.py&quot;, &quot;--once&quot;, &quot;--provider&quot;, &quot;test&quot;, &quot;--output-dir&quot;, &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase7_hosted_package_validation&quot;]</td></tr><tr><td>Returncode</td><td>0</td></tr><tr><td>Stdout Tail</td><td>  &quot;promoted_discoveries&quot;: 6,
+    &quot;retained_local_discoveries&quot;: 12,
+    &quot;memory_boundary_established&quot;: true,
+    &quot;synchronization_policy_established&quot;: true,
+    &quot;maze_a_tool_calls&quot;: 16,
+    &quot;maze_b_tool_calls&quot;: 16,
+    &quot;maze_b_deterministic_tool_calls&quot;: 0,
+    &quot;planning_boundary_established&quot;: true,
+    &quot;tool_boundary_enforced&quot;: true,
+    &quot;worker_agents_introduced&quot;: 2,
+    &quot;worker_agent_b_introduced&quot;: true,
+    &quot;next_phase&quot;: &quot;Teach Worker collaboration now that two Worker Agents can reason independently in separate local domains.&quot;,
+    &quot;elapsed_seconds&quot;: 0.0
+  },
+  &quot;artifacts&quot;: {
+    &quot;trace&quot;: &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase7_hosted_package_validation/phase7_monolithic_trace.json&quot;,
+    &quot;visual&quot;: &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase7_hosted_package_validation/PHASE7_MONOLITHIC_VISUAL.html&quot;,
+    &quot;progress&quot;: &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase7_hosted_package_validation/PROGRESS.html&quot;
+  }
+}</td></tr><tr><td>Stderr Tail</td><td></td></tr><tr><td>Trace Created</td><td>True</td></tr><tr><td>Trace Summary</td><td>{&quot;status&quot;: &quot;complete&quot;, &quot;implemented_scope&quot;: &quot;Part II Phase 1-7 starter deployment&quot;, &quot;llm_call_budget&quot;: 25, &quot;llm_call_budget_used&quot;: 0, &quot;llm_call_budget_remaining&quot;: 25, &quot;reasoning_agents&quot;: 3, &quot;pydantic_ai_reasoning_agents&quot;: 3, &quot;deterministic_orchestrators&quot;: 1, &quot;deterministic_workers&quot;: 0, &quot;team_memory_components&quot;: 1, &quot;local_memory_components&quot;: 2, &quot;analyst_llm_calls&quot;: 0, &quot;worker_agent_llm_calls&quot;: 0, &quot;worker_agent_a_llm_calls&quot;: 0, &quot;worker_agent_b_llm_calls&quot;: 0, &quot;worker_move_decision_calls&quot;: 0, &quot;worker_policy_setup_calls&quot;: 0, &quot;orchestrator_llm_calls&quot;: 0, &quot;global_planning_owner&quot;: &quot;Analyst Agent&quot;, &quot;local_planning_owner&quot;: &quot;Worker Agent A and Worker Agent B&quot;, &quot;shared_memory_owner&quot;: &quot;Team Memory&quot;, &quot;local_memory_owner&quot;: &quot;each assigned Worker Agent&quot;, &quot;synchronization_owner&quot;: &quot;each Worker Agent under Analyst policy&quot;, &quot;team_memory_writes&quot;: 8, &quot;local_memory_writes&quot;: 18, &quot;sync_evaluations&quot;: 18, &quot;promoted_discoveries&quot;: 6, &quot;retained_local_discoveries&quot;: 12, &quot;memory_boundary_established&quot;: true, &quot;synchronization_policy_established&quot;: true, &quot;maze_a_tool_calls&quot;: 16, &quot;maze_b_tool_calls&quot;: 16, &quot;maze_b_deterministic_tool_calls&quot;: 0, &quot;planning_boundary_established&quot;: true, &quot;tool_boundary_enforced&quot;: true, &quot;worker_agents_introduced&quot;: 2, &quot;worker_agent_b_introduced&quot;: true, &quot;next_phase&quot;: &quot;Teach Worker collaboration now that two Worker Agents can reason independently in separate local domains.&quot;, &quot;elapsed_seconds&quot;: 0.0}</td></tr><tr><td>Artifact Dir</td><td>runs/phase7_hosted_package_validation</td></tr></tbody></table>
+      </section>
+      <section class="panel note">
+        <h2>Deployment Status</h2>
+        <p>Hosted deployment completed; model-backed invocation still needs managed-identity model permission.</p>
+        <p>Command status: available. Deployment status: active.</p>
+      </section>
+      <section class="panel note">
+        <h2>Hosted Invocation</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Attempted</td><td>True</td></tr><tr><td>Status</td><td>blocked_by_managed_identity_rbac</td></tr><tr><td>Session Id</td><td>9b516e4245a225f100W8rH5u2Q6rrQjxEiPTGkL2LnIVoaqIds</td></tr><tr><td>Trace Id</td><td>1272f363f62cb21234cd33768772e70d</td></tr><tr><td>Readiness Fixed</td><td>True</td></tr><tr><td>Server Reached Handler</td><td>True</td></tr><tr><td>Managed Identity Token Acquired</td><td>True</td></tr><tr><td>Failed Operation</td><td>POST /api/projects/{projectName}/openai/v1/chat/completions</td></tr><tr><td>Missing Data Action</td><td>Microsoft.CognitiveServices/accounts/OpenAI/deployments/chat/completions/action</td></tr><tr><td>Hosted Identity Principal Id</td><td>ef0c0ce9-ae88-416e-8619-637a4d6f4c96</td></tr><tr><td>Required Role Assignment</td><td>az role assignment create --assignee ef0c0ce9-ae88-416e-8619-637a4d6f4c96 --role &quot;Cognitive Services OpenAI User&quot; --scope /subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/providers/Microsoft.CognitiveServices/accounts/maze-foundry-prav-ada483</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Runtime Boundary</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Packaging Style</td><td>monolithic hosted-agent source package</td></tr><tr><td>Agent Framework</td><td>Pydantic AI</td></tr><tr><td>Included Reasoning Roles</td><td>[&quot;Analyst Agent&quot;, &quot;Worker Agent A&quot;, &quot;Worker Agent B&quot;]</td></tr><tr><td>Included Deterministic Roles</td><td>[&quot;Orchestrator&quot;, &quot;Maze Tool&quot;, &quot;Team Memory / trace state&quot;]</td></tr><tr><td>Azure Native Splitting Done</td><td>False</td></tr><tr><td>Hosted Agents Created</td><td>1</td></tr><tr><td>Azure Resources Created</td><td>0</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Foundry Target</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Project Endpoint</td><td>https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab</td></tr><tr><td>Deployment Name</td><td>gpt41mini-maze</td></tr><tr><td>Hosted Agent Name</td><td>maze-monolithic-agent</td></tr><tr><td>Resource Size</td><td>500m CPU / 1Gi memory in package metadata</td></tr><tr><td>Auth Mode</td><td>Azure identity at runtime; no checked-in API keys</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Report JSON</h2>
+        <details><summary>Open generated report</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 7,
+  &quot;phase_name&quot;: &quot;Monolithic Foundry-Hosted Maze Runtime&quot;,
+  &quot;status&quot;: &quot;deployed_rbac_action_required&quot;,
+  &quot;learning_objective&quot;: &quot;Move the existing agents, tools, worker logic, orchestrator, and in-process memory together behind one Foundry-hosted agent boundary.&quot;,
+  &quot;runtime_boundary&quot;: {
+    &quot;packaging_style&quot;: &quot;monolithic hosted-agent source package&quot;,
+    &quot;agent_framework&quot;: &quot;Pydantic AI&quot;,
+    &quot;included_reasoning_roles&quot;: [
+      &quot;Analyst Agent&quot;,
+      &quot;Worker Agent A&quot;,
+      &quot;Worker Agent B&quot;
+    ],
+    &quot;included_deterministic_roles&quot;: [
+      &quot;Orchestrator&quot;,
+      &quot;Maze Tool&quot;,
+      &quot;Team Memory / trace state&quot;
+    ],
+    &quot;azure_native_splitting_done&quot;: false,
+    &quot;hosted_agents_created&quot;: 1,
+    &quot;azure_resources_created&quot;: 0
+  },
+  &quot;foundry_target&quot;: {
+    &quot;project_endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+    &quot;deployment_name&quot;: &quot;gpt41mini-maze&quot;,
+    &quot;hosted_agent_name&quot;: &quot;maze-monolithic-agent&quot;,
+    &quot;resource_size&quot;: &quot;500m CPU / 1Gi memory in package metadata&quot;,
+    &quot;auth_mode&quot;: &quot;Azure identity at runtime; no checked-in API keys&quot;
+  },
+  &quot;package&quot;: {
+    &quot;path&quot;: &quot;hosted/phase7-monolithic-maze-agent&quot;,
+    &quot;packaged_files&quot;: [
+      &quot;main.py&quot;,
+      &quot;requirements.txt&quot;,
+      &quot;azure.yaml&quot;,
+      &quot;src/reasoning_curriculum.py&quot;,
+      &quot;src/provider_config.py&quot;
+    ],
+    &quot;entry_point&quot;: &quot;main.py&quot;,
+    &quot;local_validation_provider&quot;: &quot;test&quot;
+  },
+  &quot;validation&quot;: {
+    &quot;command&quot;: [
+      &quot;/usr/local/Caskroom/miniconda/base/bin/python3&quot;,
+      &quot;main.py&quot;,
+      &quot;--once&quot;,
+      &quot;--provider&quot;,
+      &quot;test&quot;,
+      &quot;--output-dir&quot;,
+      &quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase7_hosted_package_validation&quot;
+    ],
+    &quot;returncode&quot;: 0,
+    &quot;stdout_tail&quot;: &quot;  \&quot;promoted_discoveries\&quot;: 6,\n    \&quot;retained_local_discoveries\&quot;: 12,\n    \&quot;memory_boundary_established\&quot;: true,\n    \&quot;synchronization_policy_established\&quot;: true,\n    \&quot;maze_a_tool_calls\&quot;: 16,\n    \&quot;maze_b_tool_calls\&quot;: 16,\n    \&quot;maze_b_deterministic_tool_calls\&quot;: 0,\n    \&quot;planning_boundary_established\&quot;: true,\n    \&quot;tool_boundary_enforced\&quot;: true,\n    \&quot;worker_agents_introduced\&quot;: 2,\n    \&quot;worker_agent_b_introduced\&quot;: true,\n    \&quot;next_phase\&quot;: \&quot;Teach Worker collaboration now that two Worker Agents can reason independently in separate local domains.\&quot;,\n    \&quot;elapsed_seconds\&quot;: 0.0\n  },\n  \&quot;artifacts\&quot;: {\n    \&quot;trace\&quot;: \&quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase7_hosted_package_validation/phase7_monolithic_trace.json\&quot;,\n    \&quot;visual\&quot;: \&quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase7_hosted_package_validation/PHASE7_MONOLITHIC_VISUAL.html\&quot;,\n    \&quot;progress\&quot;: \&quot;/Users/praveenvalapadasu/cursor-projects/ai_voice/workday/orb-execute/learn-agent/azure-foundry-maze-migration-from-scratch/runs/phase7_hosted_package_validation/PROGRESS.html\&quot;\n  }\n}&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;trace_created&quot;: true,
+    &quot;trace_summary&quot;: {
+      &quot;status&quot;: &quot;complete&quot;,
+      &quot;implemented_scope&quot;: &quot;Part II Phase 1-7 starter deployment&quot;,
+      &quot;llm_call_budget&quot;: 25,
+      &quot;llm_call_budget_used&quot;: 0,
+      &quot;llm_call_budget_remaining&quot;: 25,
+      &quot;reasoning_agents&quot;: 3,
+      &quot;pydantic_ai_reasoning_agents&quot;: 3,
+      &quot;deterministic_orchestrators&quot;: 1,
+      &quot;deterministic_workers&quot;: 0,
+      &quot;team_memory_components&quot;: 1,
+      &quot;local_memory_components&quot;: 2,
+      &quot;analyst_llm_calls&quot;: 0,
+      &quot;worker_agent_llm_calls&quot;: 0,
+      &quot;worker_agent_a_llm_calls&quot;: 0,
+      &quot;worker_agent_b_llm_calls&quot;: 0,
+      &quot;worker_move_decision_calls&quot;: 0,
+      &quot;worker_policy_setup_calls&quot;: 0,
+      &quot;orchestrator_llm_calls&quot;: 0,
+      &quot;global_planning_owner&quot;: &quot;Analyst Agent&quot;,
+      &quot;local_planning_owner&quot;: &quot;Worker Agent A and Worker Agent B&quot;,
+      &quot;shared_memory_owner&quot;: &quot;Team Memory&quot;,
+      &quot;local_memory_owner&quot;: &quot;each assigned Worker Agent&quot;,
+      &quot;synchronization_owner&quot;: &quot;each Worker Agent under Analyst policy&quot;,
+      &quot;team_memory_writes&quot;: 8,
+      &quot;local_memory_writes&quot;: 18,
+      &quot;sync_evaluations&quot;: 18,
+      &quot;promoted_discoveries&quot;: 6,
+      &quot;retained_local_discoveries&quot;: 12,
+      &quot;memory_boundary_established&quot;: true,
+      &quot;synchronization_policy_established&quot;: true,
+      &quot;maze_a_tool_calls&quot;: 16,
+      &quot;maze_b_tool_calls&quot;: 16,
+      &quot;maze_b_deterministic_tool_calls&quot;: 0,
+      &quot;planning_boundary_established&quot;: true,
+      &quot;tool_boundary_enforced&quot;: true,
+      &quot;worker_agents_introduced&quot;: 2,
+      &quot;worker_agent_b_introduced&quot;: true,
+      &quot;next_phase&quot;: &quot;Teach Worker collaboration now that two Worker Agents can reason independently in separate local domains.&quot;,
+      &quot;elapsed_seconds&quot;: 0.0
+    },
+    &quot;artifact_dir&quot;: &quot;runs/phase7_hosted_package_validation&quot;
+  },
+  &quot;deploy_tooling&quot;: {
+    &quot;azd_version&quot;: {
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;version&quot;
+      ],
+      &quot;returncode&quot;: 0,
+      &quot;stdout&quot;: &quot;azd version 1.31.2 (commit 3440050737c18537ae6cdbd1d64b98c594c495ad) (stable)&quot;,
+      &quot;stderr&quot;: &quot;&quot;
+    },
+    &quot;azd_ai_agent_help&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;ted agent session.\n  init        Initialize a new AI agent project. (Preview)\n  invoke      Send a message to your agent.\n  monitor     Monitor logs from a hosted agent.\n  optimize    Evaluate and optimize AI agents.\n  pack        Build a ready-to-sideload Teams app package for an activity agent.\n  publish     Publish an activity agent as a Teams app to the Microsoft 365 store.\n  run         Run your agent locally for development.\n  sample      Browse the curated catalog of agent samples and azd templates.\n  sessions    Manage sessions for a hosted agent endpoint.\n  show        Show the status of a hosted agent.\n  version     Prints the version of the application\n\nFlags:\n  -C, --cwd string           Sets the current working directory\n      --debug                Enables debug and diagnostics logging\n  -e, --environment string   The name of the environment to use\n  -h, --help                 help for agent\n      --no-prompt            Runs without prompts. Uses existing values; fails if any required value or decision cannot be resolved automatically.\n  -o, --output string        The output format (default \&quot;default\&quot;)\n\nUse \&quot;agent [command] --help\&quot; for more information about a command.&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;
+    },
+    &quot;foundry_agent_command_status&quot;: &quot;available&quot;
+  },
+  &quot;deployment&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;hosted_agent_name&quot;: &quot;maze-monolithic-agent&quot;,
+    &quot;active_version&quot;: &quot;2&quot;,
+    &quot;playground_url&quot;: &quot;https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-monolithic-agent/build?version=2&quot;,
+    &quot;endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-monolithic-agent/endpoint/protocols/openai/responses?api-version=v1&quot;,
+    &quot;code_runtime&quot;: &quot;python_3_13&quot;,
+    &quot;cpu&quot;: &quot;0.5&quot;,
+    &quot;memory&quot;: &quot;1Gi&quot;
+  },
+  &quot;invocation&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status&quot;: &quot;blocked_by_managed_identity_rbac&quot;,
+    &quot;session_id&quot;: &quot;9b516e4245a225f100W8rH5u2Q6rrQjxEiPTGkL2LnIVoaqIds&quot;,
+    &quot;trace_id&quot;: &quot;1272f363f62cb21234cd33768772e70d&quot;,
+    &quot;readiness_fixed&quot;: true,
+    &quot;server_reached_handler&quot;: true,
+    &quot;managed_identity_token_acquired&quot;: true,
+    &quot;failed_operation&quot;: &quot;POST /api/projects/{projectName}/openai/v1/chat/completions&quot;,
+    &quot;missing_data_action&quot;: &quot;Microsoft.CognitiveServices/accounts/OpenAI/deployments/chat/completions/action&quot;,
+    &quot;hosted_identity_principal_id&quot;: &quot;ef0c0ce9-ae88-416e-8619-637a4d6f4c96&quot;,
+    &quot;required_role_assignment&quot;: &quot;az role assignment create --assignee ef0c0ce9-ae88-416e-8619-637a4d6f4c96 --role \&quot;Cognitive Services OpenAI User\&quot; --scope /subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/providers/Microsoft.CognitiveServices/accounts/maze-foundry-prav-ada483&quot;
+  },
+  &quot;summary&quot;: {
+    &quot;hosted_package_created&quot;: true,
+    &quot;local_package_validation_passed&quot;: true,
+    &quot;hosted_agents_created&quot;: 1,
+    &quot;hosted_agent_versions_deployed&quot;: &quot;2&quot;,
+    &quot;azure_resources_created&quot;: 0,
+    &quot;foundry_model_calls&quot;: 1,
+    &quot;llm_calls_during_package_validation&quot;: 0,
+    &quot;estimated_cost&quot;: &quot;hosted runtime deployed; model-backed invocation blocked before successful completion by managed identity RBAC&quot;,
+    &quot;next_phase&quot;: &quot;Approve hosted-agent managed identity model-inference RBAC, then rerun the hosted invocation.&quot;
+  }
+}</pre></details>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

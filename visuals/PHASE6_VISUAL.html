@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 6</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --amber:#9a6500; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1180px, calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    h3 { margin:0 0 8px; font-size:16px; }
+    p { margin:0; color:var(--muted); }
+    a { color:var(--blue); font-weight:800; text-decoration:none; }
+    .panel,.summary,.flow-step,.answer article { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:16px; }
+    .summary strong { display:block; font-size:30px; text-transform:capitalize; }
+    .stack { display:grid; gap:14px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .metric { border:1px solid var(--line); border-radius:8px; padding:14px; background:#fff; }
+    .metric span,.answer span,.flow-step span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:6px; font-size:26px; }
+    .flow { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+    .flow-step { box-shadow:none; min-height:130px; border-left:5px solid var(--blue); }
+    .flow-step.local { border-left-color:var(--amber); }
+    .flow-step.done { border-left-color:var(--green); }
+    .answer { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .answer article { box-shadow:none; }
+    .answer p { color:#17202a; }
+    ul { margin:8px 0 0; padding-left:20px; color:#17202a; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#111827; background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    @media (max-width:980px) { header,.metrics,.flow,.answer { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 6 - Pydantic AI Analyst Agent</h1>
+        <p>Run the Analyst role locally through Pydantic AI while the model inference goes to Azure Foundry.</p>
+      </div>
+      <aside class="summary">
+        <span>Status</span>
+        <strong>complete</strong>
+        <p>Hosted agents created: 0.</p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Phase Metrics</h2>
+        <div class="metrics">
+          <div class="metric"><span>Pydantic AI Agents</span><strong>1</strong></div>
+          <div class="metric"><span>Foundry Calls</span><strong>1</strong></div>
+          <div class="metric"><span>Hosted Agents</span><strong>0</strong></div>
+          <div class="metric"><span>Maze Tool Calls</span><strong>0</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Runtime Flow</h2>
+        <div class="flow">
+          <article class="flow-step local"><span>1. Local Process</span><h3>Mac/Linux Python</h3><p>The agent code still runs where the curriculum runs today.</p></article>
+          <article class="flow-step local"><span>2. Agent Framework</span><h3>Pydantic AI</h3><p>The Analyst is a typed Pydantic AI agent, not a raw HTTP call.</p></article>
+          <article class="flow-step"><span>3. Provider</span><h3>Foundry endpoint</h3><p>The model backend is selected through the OpenAI-compatible provider boundary.</p></article>
+          <article class="flow-step"><span>4. Model</span><h3>gpt41mini-maze</h3><p>Inference runs in the Foundry project deployment.</p></article>
+          <article class="flow-step done"><span>5. Output</span><h3>Typed Analyst result</h3><p>The response is parsed into <code>AnalystMigrationOutput</code>.</p></article>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Analyst Output</h2>
+        <div class="answer"><article><span>Mission Summary</span><p>This phase proves running the Analyst Agent runtime locally using Pydantic AI with model inference offloaded to the Foundry GPT-4.1-mini deployment.</p></article><article><span>Agent Runtime Boundary</span><p>Analyst Agent code runs locally on the user environment using Pydantic AI.</p></article><article><span>Model Backend Boundary</span><p>Model inference is performed remotely on the Azure Foundry GPT-4.1-mini deployment.</p></article><article><span>Next Migration Step</span><p>Create a minimal Foundry-hosted Analyst Agent while keeping maze tools, worker agents, orchestrator, and team memory local.</p></article><article><span>Confidence</span><p>1.0</p></article></div>
+      </section>
+      <section class="panel">
+        <h2>Still Local</h2>
+        <p>Phase 6 moves only the Analyst model backend. These pieces intentionally remain local:</p>
+        <ul><li>Maze tools</li><li>Worker agents</li><li>Orchestrator</li><li>Team memory</li></ul>
+      </section>
+      <section class="panel">
+        <h2>Boundary</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Agent Runtime</td><td>local Mac/Linux Python process</td></tr><tr><td>Agent Framework</td><td>Pydantic AI</td></tr><tr><td>Model Backend</td><td>Azure Foundry project model deployment</td></tr><tr><td>Hosted Agents Created</td><td>0</td></tr><tr><td>Azure Resources Created</td><td>0</td></tr><tr><td>Maze Tools Location</td><td>local Python</td></tr><tr><td>Worker Agents Location</td><td>local curriculum code, not invoked in this phase</td></tr><tr><td>Team Memory Location</td><td>local/in-process, not invoked in this phase</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Foundry Target</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Project Endpoint</td><td>https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab</td></tr><tr><td>Deployment Name</td><td>gpt41mini-maze</td></tr><tr><td>Auth Mode</td><td>Azure CLI Entra ID token</td></tr><tr><td>Api Family</td><td>OpenAI-compatible Chat Completions API through Pydantic AI</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Next Phase</h2>
+        <p>Create the first minimal Foundry-hosted Analyst Agent while keeping maze tools and workers local.</p>
+      </section>
+      <section class="panel">
+        <h2>Report JSON</h2>
+        <details><summary>Open generated report</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 6,
+  &quot;phase_name&quot;: &quot;Pydantic AI Analyst Agent on Foundry Model&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;learning_objective&quot;: &quot;Run one local Pydantic AI Analyst Agent while using the Azure Foundry model deployment as its backend.&quot;,
+  &quot;boundary&quot;: {
+    &quot;agent_runtime&quot;: &quot;local Mac/Linux Python process&quot;,
+    &quot;agent_framework&quot;: &quot;Pydantic AI&quot;,
+    &quot;model_backend&quot;: &quot;Azure Foundry project model deployment&quot;,
+    &quot;hosted_agents_created&quot;: 0,
+    &quot;azure_resources_created&quot;: 0,
+    &quot;maze_tools_location&quot;: &quot;local Python&quot;,
+    &quot;worker_agents_location&quot;: &quot;local curriculum code, not invoked in this phase&quot;,
+    &quot;team_memory_location&quot;: &quot;local/in-process, not invoked in this phase&quot;
+  },
+  &quot;foundry_target&quot;: {
+    &quot;project_endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+    &quot;deployment_name&quot;: &quot;gpt41mini-maze&quot;,
+    &quot;auth_mode&quot;: &quot;Azure CLI Entra ID token&quot;,
+    &quot;api_family&quot;: &quot;OpenAI-compatible Chat Completions API through Pydantic AI&quot;
+  },
+  &quot;analyst_agent&quot;: {
+    &quot;name&quot;: &quot;Analyst Agent v1&quot;,
+    &quot;framework&quot;: &quot;Pydantic AI&quot;,
+    &quot;structured_output_model&quot;: &quot;AnalystMigrationOutput&quot;,
+    &quot;made_model_call&quot;: true,
+    &quot;output&quot;: {
+      &quot;mission_summary&quot;: &quot;This phase proves running the Analyst Agent runtime locally using Pydantic AI with model inference offloaded to the Foundry GPT-4.1-mini deployment.&quot;,
+      &quot;agent_runtime_boundary&quot;: &quot;Analyst Agent code runs locally on the user environment using Pydantic AI.&quot;,
+      &quot;model_backend_boundary&quot;: &quot;Model inference is performed remotely on the Azure Foundry GPT-4.1-mini deployment.&quot;,
+      &quot;local_components_remaining&quot;: [
+        &quot;Maze tools&quot;,
+        &quot;Worker agents&quot;,
+        &quot;Orchestrator&quot;,
+        &quot;Team memory&quot;
+      ],
+      &quot;next_migration_step&quot;: &quot;Create a minimal Foundry-hosted Analyst Agent while keeping maze tools, worker agents, orchestrator, and team memory local.&quot;,
+      &quot;confidence&quot;: 1.0
+    },
+    &quot;error&quot;: &quot;&quot;,
+    &quot;usage&quot;: {
+      &quot;details&quot;: {
+        &quot;accepted_prediction_tokens&quot;: 0,
+        &quot;audio_tokens&quot;: 0,
+        &quot;reasoning_tokens&quot;: 0,
+        &quot;rejected_prediction_tokens&quot;: 0
+      },
+      &quot;requests&quot;: 1,
+      &quot;output_tokens&quot;: 160,
+      &quot;input_audio_tokens&quot;: 0,
+      &quot;input_tokens&quot;: 479,
+      &quot;cache_read_tokens&quot;: 0,
+      &quot;output_reasoning_tokens&quot;: 0,
+      &quot;output_audio_tokens&quot;: 0,
+      &quot;cost&quot;: &quot;0.0004476&quot;
+    }
+  },
+  &quot;summary&quot;: {
+    &quot;pydantic_ai_agents_run&quot;: 1,
+    &quot;foundry_model_calls&quot;: 1,
+    &quot;hosted_agents_created&quot;: 0,
+    &quot;azure_resources_created&quot;: 0,
+    &quot;maze_tool_calls&quot;: 0,
+    &quot;worker_agents_run&quot;: 0,
+    &quot;estimated_cost&quot;: &quot;one short gpt-4.1-mini call&quot;,
+    &quot;next_phase&quot;: &quot;Create the first minimal Foundry-hosted Analyst Agent while keeping maze tools and workers local.&quot;
+  }
+}</pre></details>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

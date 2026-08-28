@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Maze Agent WebUI</title>
+  <style>
+    :root { --bg:#f6f7f9; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d8dee9; --blue:#285da8; --green:#21745d; --wall:#263340; --gold:#a36b00; --soft:#eaf2ff; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); line-height:1.45; }
+    main { width:min(1320px, calc(100% - 28px)); margin:0 auto; padding:24px 0 40px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; align-items:end; border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:18px; }
+    h1 { margin:0 0 6px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 10px; font-size:20px; }
+    h3 { margin:0 0 6px; font-size:15px; }
+    p { margin:0; color:var(--muted); }
+    button { border:1px solid var(--line); background:#fff; color:var(--text); border-radius:8px; padding:10px 16px; font-weight:800; min-width:96px; cursor:pointer; }
+    button.primary { background:var(--blue); color:#fff; border-color:var(--blue); }
+    button.compact { min-width:74px; padding:10px 12px; }
+    button.icon { min-width:44px; width:44px; padding:9px; font-size:17px; line-height:1; }
+    button.icon.selected.up { background:#eaf8f2; border-color:var(--green); color:var(--green); }
+    button.icon.selected.down { background:#fff1f1; border-color:#b42318; color:#b42318; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .layout { display:grid; grid-template-columns:260px minmax(0,1fr) 360px; gap:14px; align-items:start; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px; }
+    .controls { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+    .mazes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .maze { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fff; }
+    .maze-head { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:start; margin-bottom:10px; }
+    .maze-head h2 { margin:0; }
+    .feedback { display:grid; gap:8px; justify-items:end; }
+    .feedback-buttons { display:flex; gap:6px; }
+    .feedback-note { width:min(220px, 100%); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font:inherit; font-size:13px; }
+    .feedback-state { min-height:18px; color:var(--muted); font-size:12px; font-weight:700; text-align:right; }
+    .grid { display:grid; grid-template-columns:repeat(5, minmax(42px, 1fr)); gap:8px; }
+    .cell { aspect-ratio:1; border:1px solid var(--line); border-radius:8px; background:#f8fafc; position:relative; display:grid; place-items:center; font-weight:900; }
+    .cell.wall { background:var(--wall); color:#fff; border-color:var(--wall); }
+    .cell.start { background:var(--green); color:#fff; border-color:var(--green); }
+    .cell.goal { border:3px solid var(--gold); background:#fff7df; }
+    .cell.visited { background:var(--soft); border-color:#9cc2ff; }
+    .cell.current { outline:4px solid var(--blue); outline-offset:-4px; }
+    .coord { position:absolute; right:5px; bottom:4px; color:#556273; font-size:11px; font-weight:800; }
+    .timeline { max-height:650px; overflow:auto; display:grid; gap:8px; }
+    .event { border:1px solid var(--line); border-left:5px solid #cbd5e1; border-radius:8px; padding:10px; background:#fff; }
+    .event.active { background:#eaf8f2; border-left-color:var(--green); }
+    .event.plan,.event.message { border-left-color:var(--blue); }
+    .event.move { border-left-color:var(--green); }
+    .event.memory { border-left-color:var(--gold); }
+    .event strong { display:block; color:#111827; }
+    .event p { font-size:13px; }
+    .kv { display:grid; grid-template-columns:120px minmax(0,1fr); gap:8px 10px; font-size:14px; }
+    .kv span { color:var(--muted); font-weight:800; }
+    .status { border-left:5px solid var(--gold); background:#fff8e7; }
+    @media (max-width:1050px) { .layout { grid-template-columns:1fr; } .mazes { grid-template-columns:1fr; } header { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Maze Foundry WebUI</h1>
+        <p>Azure-hosted playback UI for split Foundry role agents, durable Team Memory, and human feedback telemetry.</p>
+      </div>
+      <button class="primary" id="runBtn">Run Fresh Maze</button>
+    </header>
+    <section class="layout">
+      <aside class="panel">
+        <h2>Current State</h2>
+        <div class="kv" id="state"></div>
+      </aside>
+      <section class="panel">
+        <div class="controls">
+          <button id="prevBtn">Prev</button>
+          <button id="playBtn">Play</button>
+          <button id="pauseBtn">Pause</button>
+          <button id="replayBtn">Replay</button>
+          <button class="compact" id="learnerViewBtn">Learner</button>
+          <button class="compact" id="allViewBtn">All</button>
+        </div>
+        <div class="mazes" id="mazes"></div>
+      </section>
+      <aside class="panel">
+        <h2>Timeline</h2>
+        <div class="timeline" id="timeline"></div>
+      </aside>
+    </section>
+    <section class="panel status" style="margin-top:14px">
+      <h2>Run Status</h2>
+      <p id="status">Click Run Fresh Maze to call the hosted Analyst only. Press Play after the maze appears to run the Workers.</p>
+    </section>
+  </main>
+  <script>
+    let trace = null;
+    let step = 0;
+    let timer = null;
+    let runTimer = null;
+    let viewMode = 'learner';
+    const feedbackState = {};
+
+    const stateEl = document.getElementById('state');
+    const mazesEl = document.getElementById('mazes');
+    const timelineEl = document.getElementById('timeline');
+    const statusEl = document.getElementById('status');
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[char]);
+    }
+
+    function eventPosition(event) {
+      if (Array.isArray(event.position) && event.position.length === 2) return event.position;
+      const text = event.detail || '';
+      const arrowMatch = text.match(/->\s*\((\d+),\s*(\d+)\)/);
+      if (arrowMatch) return [Number(arrowMatch[1]), Number(arrowMatch[2])];
+      const match = text.match(/\((\d+),\s*(\d+)\)/);
+      return match ? [Number(match[1]), Number(match[2])] : null;
+    }
+
+    function isMoveEvent(event) {
+      const label = (event.label || '').toLowerCase();
+      return event.type === 'move' || event.type === 'parallel_tick' || (event.type === 'tool_call' && label.startsWith('move '));
+    }
+
+    function workerCallBudget(summary) {
+      return Number(summary.worker_llm_call_budget || summary.llm_call_budget || 50);
+    }
+
+    function workerCallCount(summary, role) {
+      return Number(summary[`${role}_llm_calls`] || 0);
+    }
+
+    function mazeWorker(mazeId) {
+      return mazeId === 'maze_b' ? 'Worker Agent B' : 'Worker Agent A';
+    }
+
+    function feedbackKey(mazeId) {
+      return `${(trace?.summary || {}).team_memory_run_id || 'no-run'}:${mazeId}`;
+    }
+
+    function visibleEvents() {
+      const events = trace.events || [];
+      if (viewMode === 'all') return events;
+      if ((trace.summary || {}).parallel_worker_step_execution) {
+        return events.filter(event => {
+          if (event.type === 'parallel_tick') return true;
+          if (['state', 'plan', 'assignment', 'result'].includes(event.type) && !(event.actor || '').startsWith('Worker Agent')) return true;
+          return false;
+        });
+      }
+      return events.filter(event => {
+        if (isMoveEvent(event)) return true;
+        return ['state', 'plan', 'assignment', 'decision', 'result'].includes(event.type);
+      });
+    }
+
+    function traceIndexForVisibleStep() {
+      const event = visibleEvents()[step];
+      return event ? (event.index ?? (trace.events || []).indexOf(event)) : 0;
+    }
+
+    function currentPaths() {
+      const traceLimit = traceIndexForVisibleStep();
+      const events = (trace.events || []).filter((event, index) => (event.index ?? index) <= traceLimit);
+      const paths = {};
+      for (const maze of trace.mazes || []) paths[maze.id] = [maze.start];
+      const parallelEvents = events.filter(event => event.type === 'parallel_tick');
+      if ((trace.summary || {}).parallel_worker_step_execution && parallelEvents.length) {
+        for (const event of parallelEvents) {
+          for (const item of event.parallel_moves || []) {
+            if (!item.move_applied || !item.maze_id || !Array.isArray(item.position)) continue;
+            paths[item.maze_id] = paths[item.maze_id] || [];
+            paths[item.maze_id].push(item.position);
+          }
+        }
+        return paths;
+      }
+      for (const event of events) {
+        if (event.type === 'parallel_tick' && Array.isArray(event.parallel_moves)) {
+          for (const item of event.parallel_moves) {
+            if (!item.move_applied || !item.maze_id || !Array.isArray(item.position)) continue;
+            paths[item.maze_id] = paths[item.maze_id] || [];
+            paths[item.maze_id].push(item.position);
+          }
+          continue;
+        }
+        if (!isMoveEvent(event)) continue;
+        const target = event.target || '';
+        const pos = eventPosition(event);
+        if (!pos) continue;
+        const mazeId = event.maze_id || (target.toLowerCase().includes('maze b') ? 'maze_b' : 'maze_a');
+        paths[mazeId].push(pos);
+      }
+      return paths;
+    }
+
+    function renderState() {
+      const events = visibleEvents();
+      const event = events[step] || {};
+      const summary = trace.summary || {};
+      const moveCount = (trace.events || []).reduce((total, item, index) => {
+        if ((item.index ?? index) > traceIndexForVisibleStep()) return total;
+        if (item.type === 'parallel_tick' && Array.isArray(item.parallel_moves)) {
+          return total + item.parallel_moves.filter(move => move.move_applied).length;
+        }
+        return total + (isMoveEvent(item) ? 1 : 0);
+      }, 0);
+      const llmText = summary.llm_call_budget_used === 0 && trace.provider?.provider === 'test'
+        ? '0 (sample trace)'
+        : (summary.llm_call_budget_used ?? '-');
+      stateEl.innerHTML = `
+        <span>Phase</span><strong>${escapeHtml(trace.phase || '')}</strong>
+        <span>Concept</span><strong>${escapeHtml(trace.concept || '')}</strong>
+        <span>View</span><strong>${viewMode === 'all' ? 'all events' : 'learner events'}</strong>
+        <span>Timeline</span><strong>${step + 1} / ${events.length}</strong>
+        <span>Moves</span><strong>${moveCount}</strong>
+        <span>Actor</span><strong>${escapeHtml(event.actor || '-')}</strong>
+        <span>Event</span><strong>${escapeHtml(event.type || '-')}</strong>
+        <span>Total LLM calls</span><strong>${escapeHtml(llmText)}</strong>
+        <span>Worker A calls</span><strong>${workerCallCount(summary, 'worker_a')} / ${workerCallBudget(summary)}</strong>
+        <span>Worker B calls</span><strong>${workerCallCount(summary, 'worker_b')} / ${workerCallBudget(summary)}</strong>
+        <span>Loop guard</span><strong>${escapeHtml(summary.guardrail_corrections ?? 0)}</strong>
+        <span>Agents</span><strong>${escapeHtml(summary.reasoning_agents ?? '-')}</strong>
+      `;
+    }
+
+    function renderMazes() {
+      const paths = currentPaths();
+      mazesEl.innerHTML = '';
+      for (const maze of trace.mazes || []) {
+        const visited = new Set((paths[maze.id] || []).map(p => `${p[0]},${p[1]}`));
+        const current = (paths[maze.id] || [maze.start]).at(-1);
+        const wrap = document.createElement('article');
+        wrap.className = 'maze';
+        const key = feedbackKey(maze.id);
+        const savedFeedback = feedbackState[key] || {};
+        wrap.innerHTML = `
+          <div class="maze-head">
+            <div>
+              <h2>${escapeHtml(maze.label)}</h2>
+              <p>${escapeHtml(mazeWorker(maze.id))}</p>
+            </div>
+            <div class="feedback" data-maze-id="${escapeHtml(maze.id)}">
+              <div class="feedback-buttons">
+                <button class="icon up ${savedFeedback.rating === 'up' ? 'selected' : ''}" type="button" title="Thumbs up for ${escapeHtml(mazeWorker(maze.id))}" aria-label="Thumbs up for ${escapeHtml(maze.label)}">👍</button>
+                <button class="icon down ${savedFeedback.rating === 'down' ? 'selected' : ''}" type="button" title="Thumbs down for ${escapeHtml(mazeWorker(maze.id))}" aria-label="Thumbs down for ${escapeHtml(maze.label)}">👎</button>
+              </div>
+              <input class="feedback-note" type="text" maxlength="500" placeholder="Optional note" value="${escapeHtml(savedFeedback.note || '')}">
+              <div class="feedback-state">${escapeHtml(savedFeedback.status || '')}</div>
+            </div>
+          </div>
+          <div class="grid"></div>
+        `;
+        const grid = wrap.querySelector('.grid');
+        maze.rows.forEach((row, r) => {
+          [...row].forEach((ch, c) => {
+            const cell = document.createElement('div');
+            const classes = ['cell'];
+            if (ch === '#') classes.push('wall');
+            if (ch === 'S') classes.push('start');
+            if (ch === 'G') classes.push('goal');
+            if (visited.has(`${r},${c}`)) classes.push('visited');
+            if (current && current[0] === r && current[1] === c) classes.push('current');
+            cell.className = classes.join(' ');
+            cell.innerHTML = `${ch === '#' ? '#' : ch === 'S' ? 'S' : ch === 'G' ? 'G' : ''}<span class="coord">${r},${c}</span>`;
+            grid.appendChild(cell);
+          });
+        });
+        const feedback = wrap.querySelector('.feedback');
+        const noteInput = wrap.querySelector('.feedback-note');
+        wrap.querySelector('.up').onclick = () => submitFeedback(maze.id, 'up', noteInput.value);
+        wrap.querySelector('.down').onclick = () => submitFeedback(maze.id, 'down', noteInput.value);
+        noteInput.onchange = () => {
+          feedbackState[key] = {...(feedbackState[key] || {}), note: noteInput.value};
+        };
+        mazesEl.appendChild(wrap);
+      }
+    }
+
+    async function submitFeedback(mazeId, rating, note) {
+      if (!trace) return;
+      const summary = trace.summary || {};
+      const key = feedbackKey(mazeId);
+      feedbackState[key] = {rating, note, status: 'Saving feedback...'};
+      render();
+      try {
+        const res = await fetch('/api/feedback', {
+          method:'POST',
+          cache:'no-store',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            run_id: summary.team_memory_run_id || '',
+            phase: trace.phase || 18,
+            maze_id: mazeId,
+            rating,
+            note,
+            summary
+          })
+        });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'feedback save failed');
+        feedbackState[key] = {rating, note, status: payload.team_memory_persisted ? 'Feedback saved' : 'Logged; memory write skipped'};
+        statusEl.textContent = `${mazeWorker(mazeId)} feedback recorded: thumbs ${rating}.`;
+      } catch (error) {
+        feedbackState[key] = {rating, note, status: `Feedback failed`};
+        statusEl.textContent = `Feedback failed: ${error.message || error}`;
+      }
+      render();
+    }
+
+    function renderTimeline() {
+      timelineEl.innerHTML = '';
+      visibleEvents().forEach((event, index) => {
+        const div = document.createElement('article');
+        div.className = `event ${event.type || ''} ${isMoveEvent(event) ? 'move' : ''} ${index === step ? 'active' : ''}`;
+        const tickWorkers = Array.isArray(event.parallel_moves)
+          ? event.parallel_moves.map(item => item.worker || 'Worker').join(' + ')
+          : 'Worker A + Worker B';
+        const title = event.type === 'parallel_tick'
+          ? `${index + 1}. Parallel Tick ${event.parallel_tick || ''} - ${tickWorkers}`
+          : `${index + 1}. ${event.actor || 'Event'} - ${event.type || ''}`;
+        div.innerHTML = `<strong>${escapeHtml(title)}</strong><p>${escapeHtml(event.detail || event.label || '')}</p>`;
+        div.onclick = () => { step = index; render(); };
+        timelineEl.appendChild(div);
+      });
+      const active = timelineEl.querySelector('.active');
+      if (active) active.scrollIntoView({block:'nearest'});
+    }
+
+    function render() {
+      if (!trace) return;
+      renderState();
+      renderMazes();
+      renderTimeline();
+    }
+
+    function renderEmptyState() {
+      stateEl.innerHTML = `
+        <span>Phase</span><strong>18</strong>
+        <span>Concept</span><strong>Human Feedback Telemetry</strong>
+        <span>Trace</span><strong>not loaded</strong>
+        <span>LLM calls</span><strong>0</strong>
+      `;
+      mazesEl.innerHTML = '<article class="maze"><h2>No Live Maze Loaded</h2><p>Use Run Fresh Maze to generate a new layout through the Analyst Agent.</p></article>';
+      timelineEl.innerHTML = '<article class="event"><strong>Waiting for run</strong><p>No sample trace is loaded by default. Run Fresh Maze creates a new Analyst-generated maze; Play runs the Workers.</p></article>';
+    }
+
+    function startPlayback() {
+      clearInterval(timer);
+      timer = setInterval(() => {
+        if (!trace || step >= visibleEvents().length - 1) return clearInterval(timer);
+        step += 1;
+        render();
+      }, 700);
+    }
+
+    async function play() {
+      if (!trace) {
+        statusEl.textContent = 'Generate a maze first with Run Fresh Maze.';
+        return;
+      }
+      if ((trace.summary || {}).workflow_stage === 'mission_ready') {
+        await runWorkers();
+        return;
+      }
+      startPlayback();
+    }
+
+    async function loadSample() {
+      const res = await fetch('/api/sample-trace');
+      trace = await res.json();
+      step = 0;
+      statusEl.textContent = 'Loaded packaged sample trace. Live runs use split Foundry role agents when configured.';
+      render();
+    }
+
+    async function runHosted() {
+      const runBtn = document.getElementById('runBtn');
+      const started = Date.now();
+      clearInterval(runTimer);
+      trace = null;
+      step = 0;
+      renderEmptyState();
+      runBtn.disabled = true;
+      runBtn.textContent = 'Generating...';
+      statusEl.textContent = 'Calling hosted Analyst Agent. The generated maze will appear before Worker agents run.';
+      runTimer = setInterval(() => {
+        const elapsed = Math.round((Date.now() - started) / 1000);
+        statusEl.textContent = `Generating Analyst mission for ${elapsed}s. Workers will not run until you press Play.`;
+      }, 1000);
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 90000);
+        const res = await fetch('/api/mission', {method:'POST', cache:'no-store', signal:controller.signal});
+        clearTimeout(timeout);
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'mission call failed');
+        trace = payload.trace;
+        step = 0;
+        const summary = trace.summary || {};
+        const elapsed = Math.round((Date.now() - started) / 1000);
+        const runId = summary.team_memory_run_id ? ` Run id: ${summary.team_memory_run_id}.` : '';
+        statusEl.textContent = `Analyst generated fresh Maze A/B layouts in ${elapsed}s.${runId} Press Play to run Worker A and Worker B.`;
+        render();
+      } catch (error) {
+        const elapsed = Math.round((Date.now() - started) / 1000);
+        statusEl.textContent = error.name === 'AbortError'
+          ? `Analyst mission timed out after ${elapsed}s. No maze was changed.`
+          : `Analyst mission failed after ${elapsed}s: ${error.message || error}`;
+      } finally {
+        clearInterval(runTimer);
+        runBtn.disabled = false;
+        runBtn.textContent = 'Run Fresh Maze';
+      }
+    }
+
+    async function runWorkers() {
+      const playBtn = document.getElementById('playBtn');
+      const runBtn = document.getElementById('runBtn');
+      const summary = trace.summary || {};
+      const runId = summary.team_memory_run_id;
+      if (!runId) {
+        statusEl.textContent = 'Cannot run Workers because this mission has no Team Memory run id.';
+        return;
+      }
+      const started = Date.now();
+      clearInterval(runTimer);
+      playBtn.disabled = true;
+      runBtn.disabled = true;
+      playBtn.textContent = 'Running...';
+      statusEl.textContent = 'Calling active Worker agents in parallel, one visible step per Worker.';
+      const runningEvents = [...(trace.events || [])];
+      const startIndex = runningEvents.length;
+      runningEvents.push(
+        {
+          index: startIndex,
+          type: 'assignment',
+          actor: 'Azure WebUI Coordinator',
+          target: 'maze-worker-agent-a',
+          label: 'dispatch maze a',
+          detail: 'Play was pressed. Worker Agent A is ready for parallel step execution against Maze A.'
+        },
+        {
+          index: startIndex + 1,
+          type: 'assignment',
+          actor: 'Azure WebUI Coordinator',
+          target: 'maze-worker-agent-b',
+          label: 'dispatch maze b',
+          detail: 'Play was pressed. Worker Agent B is ready for parallel step execution against Maze B.'
+        }
+      );
+      trace = {
+        ...trace,
+        events: runningEvents,
+        summary: {...summary, workflow_stage: 'workers_running', worker_a_outcome: 'running', worker_b_outcome: 'running'}
+      };
+      step = visibleEvents().length - 1;
+      render();
+      runTimer = setInterval(() => {
+        const elapsed = Math.round((Date.now() - started) / 1000);
+        statusEl.textContent = `Running active Workers in parallel ticks for ${elapsed}s against the already displayed maze.`;
+      }, 1000);
+      try {
+        const terminal = new Set(['goal_reached', 'reported_impossible', 'reported_stuck', 'budget_exhausted', 'invalid_move', 'tool_rejected_move', 'agent_error']);
+        let cycles = 0;
+        while (cycles < 50) {
+          cycles += 1;
+          const currentSummary = trace.summary || {};
+          const callBudget = workerCallBudget(currentSummary);
+          const activeRoles = [];
+          if (!terminal.has(currentSummary.worker_a_outcome || 'pending') && workerCallCount(currentSummary, 'worker_a') < callBudget) activeRoles.push('worker_a');
+          if (!terminal.has(currentSummary.worker_b_outcome || 'pending') && workerCallCount(currentSummary, 'worker_b') < callBudget) activeRoles.push('worker_b');
+          if (!activeRoles.length) break;
+          const rolesForTick = activeRoles;
+          statusEl.textContent = `Parallel tick ${cycles}: ${rolesForTick.join(' and ')} are making their next visible move.`;
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 120000);
+          const res = await fetch('/api/worker-steps', {
+            method:'POST',
+            cache:'no-store',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({run_id:runId, roles:rolesForTick}),
+            signal:controller.signal
+          });
+          clearTimeout(timeout);
+          const payload = await res.json();
+          if (!res.ok) throw new Error(payload.error || 'parallel worker step failed');
+          trace = payload.trace;
+          step = visibleEvents().length - 1;
+          render();
+          await new Promise(resolve => setTimeout(resolve, 650));
+        }
+        const elapsed = Math.round((Date.now() - started) / 1000);
+        const nextSummary = trace.summary || {};
+        statusEl.textContent = `Workers stopped after ${elapsed}s. Worker A: ${nextSummary.worker_a_outcome || '-'}. Worker B: ${nextSummary.worker_b_outcome || '-'}.`;
+      } catch (error) {
+        const elapsed = Math.round((Date.now() - started) / 1000);
+        statusEl.textContent = error.name === 'AbortError'
+          ? `Worker step timed out after ${elapsed}s. The displayed maze keeps the last completed step.`
+          : `Worker step failed after ${elapsed}s: ${error.message || error}`;
+      } finally {
+        clearInterval(runTimer);
+        playBtn.disabled = false;
+        runBtn.disabled = false;
+        playBtn.textContent = 'Play';
+      }
+    }
+
+    document.getElementById('prevBtn').onclick = () => { step = Math.max(0, step - 1); render(); };
+    document.getElementById('playBtn').onclick = play;
+    document.getElementById('pauseBtn').onclick = () => clearInterval(timer);
+    document.getElementById('replayBtn').onclick = () => { step = 0; render(); startPlayback(); };
+    document.getElementById('runBtn').onclick = runHosted;
+    document.getElementById('learnerViewBtn').onclick = () => { viewMode = 'learner'; step = 0; render(); };
+    document.getElementById('allViewBtn').onclick = () => { viewMode = 'all'; step = 0; render(); };
+    renderEmptyState();
+  </script>
+</body>
+</html>

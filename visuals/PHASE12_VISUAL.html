@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 12</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --amber:#9a6500; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    h3 { margin:0 0 8px; font-size:16px; }
+    p { margin:0; color:var(--muted); }
+    .panel,.summary,.step,.metric { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:16px; }
+    .summary strong { display:block; font-size:26px; text-transform:capitalize; }
+    .stack { display:grid; gap:14px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .metric { box-shadow:none; }
+    .metric span,.step span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:6px; font-size:26px; }
+    .flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .step { box-shadow:none; min-height:150px; border-left:5px solid var(--blue); }
+    .step.tool { border-left-color:var(--green); background:#eef8f3; }
+    .step.note { border-left-color:var(--amber); background:#fff8e7; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#111827; background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    @media (max-width:980px) { header,.metrics,.flow { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 12 - PydanticAI Runtime Uses Foundry Toolbox MCP</h1>
+        <p>Switch the hosted PydanticAI maze runtime from direct HTTP tool calls to the Foundry toolbox MCP endpoint.</p>
+      </div>
+      <aside class="summary">
+        <span>Status</span>
+        <strong>complete</strong>
+        <p>MCP calls observed: 32.</p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Phase Metrics</h2>
+        <div class="metrics">
+          <div class="metric"><span>MCP Tool Calls</span><strong>32</strong></div>
+          <div class="metric"><span>Direct HTTP Calls</span><strong>0</strong></div>
+          <div class="metric"><span>LLM Calls</span><strong>17</strong></div>
+          <div class="metric"><span>New Compute</span><strong>0</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Runtime Flow</h2>
+        <div class="flow">
+          <article class="step"><span>1. PydanticAI</span><h3>Hosted agent code</h3><p>The agent still owns orchestration, worker logic, and trace generation.</p></article>
+          <article class="step tool"><span>2. Foundry MCP</span><h3>Toolbox endpoint</h3><p>The Maze Tool boundary now calls <code>maze-toolbox</code> over MCP.</p></article>
+          <article class="step tool"><span>3. OpenAPI wrapper</span><h3>Foundry tool</h3><p>Foundry maps MCP tool calls to <code>inspectMaze</code> and <code>moveInMaze</code>.</p></article>
+          <article class="step note"><span>4. Azure Function</span><h3>Implementation</h3><p>The deterministic Maze Tool code still runs as the Phase 10 Function App.</p></article>
+        </div>
+      </section>
+      <section class="panel"><h2>Architecture</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Before</td><td>PydanticAI hosted agent -&gt; ExternalMazeToolProgram -&gt; Azure Function Maze Tool</td></tr><tr><td>After</td><td>PydanticAI hosted agent -&gt; Foundry toolbox MCP endpoint -&gt; OpenAPI wrapper -&gt; Azure Function Maze Tool</td></tr><tr><td>Fallback Order</td><td>MAZE_TOOL_MCP_ENDPOINT, then MAZE_TOOL_BASE_URL, then in-process MazeToolProgram</td></tr></tbody></table></section>
+      <section class="panel"><h2>Toolbox</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Name</td><td>maze-toolbox</td></tr><tr><td>Endpoint Present</td><td>True</td></tr><tr><td>Project Endpoint</td><td>https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab</td></tr></tbody></table></section>
+      <section class="panel"><h2>Live WebUI Validation</h2><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status Code</td><td>200</td></tr><tr><td>Source</td><td>foundry-hosted-agent</td></tr><tr><td>Error</td><td></td></tr><tr><td>Provider</td><td>foundry</td></tr><tr><td>Model</td><td>gpt41mini-maze</td></tr><tr><td>Llm Calls</td><td>17</td></tr><tr><td>Maze Tool Boundary</td><td>FoundryToolboxMCPMazeToolProgram</td></tr><tr><td>Maze Tool Boundary Location</td><td>Foundry toolbox MCP endpoint wrapping Azure Function OpenAPI tool</td></tr><tr><td>External Maze Tool Calls</td><td>32</td></tr><tr><td>Foundry Toolbox Mcp Calls</td><td>32</td></tr><tr><td>Direct Http Tool Calls</td><td>0</td></tr><tr><td>Mcp Event Count</td><td>32</td></tr><tr><td>Direct Http Event Count</td><td>0</td></tr><tr><td>Events</td><td>96</td></tr><tr><td>Passed</td><td>True</td></tr></tbody></table></section>
+      <section class="panel"><h2>Report JSON</h2><details><summary>Open generated report</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 12,
+  &quot;phase_name&quot;: &quot;PydanticAI Runtime Uses Foundry Toolbox MCP&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;mode&quot;: &quot;apply&quot;,
+  &quot;learning_objective&quot;: &quot;Switch the hosted PydanticAI maze runtime from direct HTTP tool calls to the Foundry toolbox MCP endpoint.&quot;,
+  &quot;architecture&quot;: {
+    &quot;before&quot;: &quot;PydanticAI hosted agent -&gt; ExternalMazeToolProgram -&gt; Azure Function Maze Tool&quot;,
+    &quot;after&quot;: &quot;PydanticAI hosted agent -&gt; Foundry toolbox MCP endpoint -&gt; OpenAPI wrapper -&gt; Azure Function Maze Tool&quot;,
+    &quot;fallback_order&quot;: &quot;MAZE_TOOL_MCP_ENDPOINT, then MAZE_TOOL_BASE_URL, then in-process MazeToolProgram&quot;
+  },
+  &quot;toolbox&quot;: {
+    &quot;name&quot;: &quot;maze-toolbox&quot;,
+    &quot;project_endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+    &quot;mcp_endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1&quot;,
+    &quot;lookup&quot;: {
+      &quot;command&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;           {\n                      \&quot;functionKey\&quot;: []\n                    }\n                  ],\n                  \&quot;summary\&quot;: \&quot;Return legal moves from the current maze position.\&quot;\n                }\n              },\n              \&quot;/api/maze/move\&quot;: {\n                \&quot;post\&quot;: {\n                  \&quot;operationId\&quot;: \&quot;moveInMaze\&quot;,\n                  \&quot;requestBody\&quot;: {\n                    \&quot;content\&quot;: {\n                      \&quot;application/json\&quot;: {\n                        \&quot;schema\&quot;: {\n                          \&quot;$ref\&quot;: \&quot;#/components/schemas/MoveRequest\&quot;\n                        }\n                      }\n                    },\n                    \&quot;required\&quot;: true\n                  },\n                  \&quot;responses\&quot;: {\n                    \&quot;200\&quot;: {\n                      \&quot;content\&quot;: {\n                        \&quot;application/json\&quot;: {\n                          \&quot;schema\&quot;: {\n                            \&quot;$ref\&quot;: \&quot;#/components/schemas/MazeToolResult\&quot;\n                          }\n                        }\n                      },\n                      \&quot;description\&quot;: \&quot;Validated move result\&quot;\n                    }\n                  },\n                  \&quot;security\&quot;: [\n                    {\n                      \&quot;functionKey\&quot;: []\n                    }\n                  ],\n                  \&quot;summary\&quot;: \&quot;Validate and apply a requested maze move.\&quot;\n                }\n              }\n            },\n            \&quot;servers\&quot;: [\n              {\n                \&quot;url\&quot;: \&quot;https://maze-tool-func-prav-ada483.azurewebsites.net\&quot;\n              }\n            ]\n          }\n        },\n        \&quot;type\&quot;: \&quot;openapi\&quot;\n      }\n    ],\n    \&quot;skills\&quot;: []\n  }\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;2026/08/26 21:10:08 toolbox show: resolved project endpoint https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab (source=flag)&quot;,
+        &quot;command&quot;: [
+          &quot;azd&quot;,
+          &quot;ai&quot;,
+          &quot;toolbox&quot;,
+          &quot;show&quot;,
+          &quot;maze-toolbox&quot;,
+          &quot;--project-endpoint&quot;,
+          &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      },
+      &quot;endpoint_found&quot;: true
+    }
+  },
+  &quot;hosted_agent_environment&quot;: {
+    &quot;status&quot;: &quot;configured&quot;,
+    &quot;maze_tool_mcp_endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1&quot;,
+    &quot;set_mcp&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;env&quot;,
+        &quot;set&quot;,
+        &quot;MAZE_TOOL_MCP_ENDPOINT&quot;,
+        &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1&quot;
+      ]
+    }
+  },
+  &quot;hosted_agent_deployment&quot;: {
+    &quot;deploy&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;ent: Deploying (Loading deployment environment) [6s]\n  maze-monolithic-agent: Deploying (Loading Foundry project) [6s]\n  maze-monolithic-agent: Deploying (Validating service dependencies) [6s]\n  maze-monolithic-agent: Deploying (Loading code package artifact) [6s]\n  maze-monolithic-agent: Deploying (Deploying hosted agent (code deploy)) [6s]\n  maze-monolithic-agent: Deploying (Preparing code agent configuration) [6s]\n  maze-monolithic-agent: Deploying (Checking existing agent) [6s]\n  maze-monolithic-agent: Deploying (Updating existing agent from code package) [7s]\n  maze-monolithic-agent: Deploying (Registering agent environment variables) [8s]\n  maze-monolithic-agent: Done [8s]\n- Agent playground (portal): https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-monolithic-agent/build?version=8 \n- Agent endpoint (responses): https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-monolithic-agent/endpoint/protocols/openai/responses?api-version=v1 \n  \nNext:\n  azd ai agent show maze-monolithic-agent\n  verify it&#x27;s running\n\n  see README.md\n  find the sample-specific payload\n\n  azd ai agent invoke maze-monolithic-agent &#x27;&lt;payload&gt;&#x27;\n  test with the sample-specific payload\n\n\nSUCCESS: Your application was deployed to Azure in 8 seconds.\nYou can view the resources created under the resource group rg-maze-foundry-lab in Azure Portal:\nhttps://portal.azure.com/#@/resource/subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/overview&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;deploy&quot;,
+        &quot;maze-monolithic-agent&quot;,
+        &quot;--no-prompt&quot;,
+        &quot;--timeout&quot;,
+        &quot;1200&quot;
+      ]
+    },
+    &quot;show&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;EPLOYMENT_NAME\&quot;: \&quot;gpt41mini-maze\&quot;,\n      \&quot;FOUNDRY_MODEL_DEPLOYMENT\&quot;: \&quot;gpt41mini-maze\&quot;,\n      \&quot;FOUNDRY_PROJECT_ENDPOINT\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab\&quot;,\n      \&quot;MAZE_PROVIDER\&quot;: \&quot;foundry\&quot;,\n      \&quot;MAZE_TOOL_BASE_URL\&quot;: \&quot;https://maze-tool-func-prav-ada483.azurewebsites.net\&quot;,\n      \&quot;MAZE_TOOL_KEY\&quot;: \&quot;[redacted]\&quot;,\n      \&quot;MAZE_TOOL_MCP_ENDPOINT\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1\&quot;\n    },\n    \&quot;kind\&quot;: \&quot;hosted\&quot;,\n    \&quot;memory\&quot;: \&quot;1Gi\&quot;,\n    \&quot;protocol_versions\&quot;: [\n      {\n        \&quot;protocol\&quot;: \&quot;responses\&quot;,\n        \&quot;version\&quot;: \&quot;2.0.0\&quot;\n      }\n    ]\n  },\n  \&quot;status\&quot;: \&quot;active\&quot;,\n  \&quot;instance_identity\&quot;: {\n    \&quot;principal_id\&quot;: \&quot;ef0c0ce9-ae88-416e-8619-637a4d6f4c96\&quot;,\n    \&quot;client_id\&quot;: \&quot;ef0c0ce9-ae88-416e-8619-637a4d6f4c96\&quot;\n  },\n  \&quot;blueprint\&quot;: {\n    \&quot;principal_id\&quot;: \&quot;738b802b-2d1f-403f-9b1b-9b4e3ddea242\&quot;,\n    \&quot;client_id\&quot;: \&quot;c0c63855-04b5-443a-93c7-9efca45095ec\&quot;\n  },\n  \&quot;blueprint_reference\&quot;: {\n    \&quot;type\&quot;: \&quot;ManagedAgentIdentityBlueprint\&quot;,\n    \&quot;blueprint_id\&quot;: \&quot;maze-monolithic-agent-d11ba\&quot;\n  },\n  \&quot;agent_guid\&quot;: \&quot;d11ba0c6-2ac6-4a60-8f37-617d5f7066bd\&quot;,\n  \&quot;playground_url\&quot;: \&quot;https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-monolithic-agent/build?version=8\&quot;,\n  \&quot;agent_endpoints\&quot;: {\n    \&quot;responses\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-monolithic-agent/endpoint/protocols/openai/responses?api-version=v1\&quot;\n  }\n}&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;ai&quot;,
+        &quot;agent&quot;,
+        &quot;show&quot;,
+        &quot;maze-monolithic-agent&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    },
+    &quot;active_version&quot;: &quot;8&quot;,
+    &quot;status&quot;: &quot;deployed&quot;
+  },
+  &quot;live_webui_validation&quot;: {
+    &quot;status_code&quot;: 200,
+    &quot;source&quot;: &quot;foundry-hosted-agent&quot;,
+    &quot;error&quot;: &quot;&quot;,
+    &quot;provider&quot;: &quot;foundry&quot;,
+    &quot;model&quot;: &quot;gpt41mini-maze&quot;,
+    &quot;llm_calls&quot;: 17,
+    &quot;maze_tool_boundary&quot;: &quot;FoundryToolboxMCPMazeToolProgram&quot;,
+    &quot;maze_tool_boundary_location&quot;: &quot;Foundry toolbox MCP endpoint wrapping Azure Function OpenAPI tool&quot;,
+    &quot;external_maze_tool_calls&quot;: 32,
+    &quot;foundry_toolbox_mcp_calls&quot;: 32,
+    &quot;direct_http_tool_calls&quot;: 0,
+    &quot;mcp_event_count&quot;: 32,
+    &quot;direct_http_event_count&quot;: 0,
+    &quot;events&quot;: 96,
+    &quot;passed&quot;: true
+  },
+  &quot;summary&quot;: {
+    &quot;foundry_toolbox_mcp_runtime_enabled&quot;: true,
+    &quot;foundry_toolbox_mcp_calls_observed&quot;: 32,
+    &quot;direct_http_tool_calls_observed&quot;: 0,
+    &quot;llm_calls_observed&quot;: 17,
+    &quot;new_azure_compute_resources&quot;: 0,
+    &quot;new_foundry_toolboxes&quot;: 0,
+    &quot;new_runtime_dependency&quot;: &quot;pydantic-ai-slim[mcp]&quot;,
+    &quot;next_phase&quot;: &quot;Remove the legacy direct HTTP fallback or keep it as a resilience fallback after comparing observability and failure behavior.&quot;
+  }
+}</pre></details></section>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 8</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --amber:#9a6500; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1180px, calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    p { margin:0; color:var(--muted); }
+    a { color:var(--blue); font-weight:800; text-decoration:none; }
+    .panel,.summary,.step { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:16px; }
+    .summary strong { display:block; font-size:28px; text-transform:capitalize; }
+    .stack { display:grid; gap:14px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .metric { border:1px solid var(--line); border-radius:8px; padding:14px; background:#fff; }
+    .metric span,.step span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:6px; font-size:26px; }
+    .flow { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+    .step { box-shadow:none; min-height:125px; border-left:5px solid var(--blue); }
+    .step:first-child { border-left-color:var(--green); }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#111827; background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    .note { border-left:5px solid var(--amber); background:#fff8e7; }
+    @media (max-width:980px) { header,.metrics,.flow { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 8 - Azure-Hosted WebUI Adapter</h1>
+        <p>Host the maze playback UI in Azure Functions and proxy hosted-agent calls through managed identity.</p>
+      </div>
+      <aside class="summary">
+        <span>Status</span>
+        <strong>deployed</strong>
+        <p>WebUI URL: <a href="https://maze-webui-func-prav-ada483.azurewebsites.net">https://maze-webui-func-prav-ada483.azurewebsites.net</a></p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Phase Metrics</h2>
+        <div class="metrics">
+          <div class="metric"><span>Azure WebUI</span><strong>yes</strong></div>
+          <div class="metric"><span>Browser Secrets</span><strong>0</strong></div>
+          <div class="metric"><span>New Services</span><strong>2</strong></div>
+          <div class="metric"><span>Live Agent Calls</span><strong>1</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>WebUI Flow</h2>
+        <div class="flow">
+          <article class="step"><span>1. Browser</span><p>Loads Azure-hosted HTML/JS playback UI.</p></article>
+          <article class="step"><span>2. Function API</span><p><code>/api/run</code> receives the user click.</p></article>
+          <article class="step"><span>3. Identity</span><p>Managed identity gets the Azure AI token server-side.</p></article>
+          <article class="step"><span>4. Agent</span><p>Calls the Foundry hosted maze endpoint.</p></article>
+          <article class="step"><span>5. Playback</span><p>Trace JSON renders play/pause/replay timeline.</p></article>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Hosting Choice</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Service</td><td>Azure Functions</td></tr><tr><td>Sku</td><td>Consumption</td></tr><tr><td>Why</td><td>Small HTTP WebUI/proxy, no browser-side secrets, avoids the App Service plan quota issue.</td></tr><tr><td>Resource Group</td><td>rg-maze-foundry-lab</td></tr><tr><td>Function Location</td><td>eastus2</td></tr><tr><td>Function App Name</td><td>maze-webui-func-prav-ada483</td></tr><tr><td>Storage Account</td><td>mazewebuipravada484</td></tr></tbody></table>
+      </section>
+      <section class="panel note">
+        <h2>RBAC Required</h2>
+        <table><thead><tr><th>Identity</th><th>Command</th></tr></thead><tbody><tr><td>Hosted Agent Managed Identity</td><td>az role assignment create --assignee ef0c0ce9-ae88-416e-8619-637a4d6f4c96 --role &quot;Cognitive Services OpenAI User&quot; --scope /subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/providers/Microsoft.CognitiveServices/accounts/maze-foundry-prav-ada483</td></tr><tr><td>Webui Managed Identity</td><td>az role assignment create --assignee 3dd0a192-5ac9-4a76-9ba8-52ee5cfab0b0 --role &quot;Foundry User&quot; --scope /subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/providers/Microsoft.CognitiveServices/accounts/maze-foundry-prav-ada483/projects/maze-migration-lab</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Deployment</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Attempted</td><td>True</td></tr><tr><td>Method</td><td>run_from_package_blob</td></tr><tr><td>Status</td><td>deployed</td></tr><tr><td>Storage</td><td>{&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;\&quot;: \&quot;mazewebuipravada484\&quot;,\n  \&quot;networkRuleSet\&quot;: {\n    \&quot;bypass\&quot;: \&quot;None\&quot;,\n    \&quot;defaultAction\&quot;: \&quot;Allow\&quot;,\n    \&quot;ipRules\&quot;: [],\n    \&quot;resourceAccessRules\&quot;: null,\n    \&quot;virtualNetworkRules\&quot;: []\n  },\n  \&quot;primaryEndpoints\&quot;: {\n    \&quot;blob\&quot;: \&quot;https://mazewebuipravada484.blob.core.windows.net/\&quot;,\n    \&quot;dfs\&quot;: \&quot;https://mazewebuipravada484.dfs.core.windows.net/\&quot;,\n    \&quot;file\&quot;: \&quot;https://mazewebuipravada484.file.core.windows.net/\&quot;,\n    \&quot;internetEndpoints\&quot;: null,\n    \&quot;microsoftEndpoints\&quot;: null,\n    \&quot;queue\&quot;: \&quot;https://mazewebuipravada484.queue.core.windows.net/\&quot;,\n    \&quot;table\&quot;: \&quot;https://mazewebuipravada484.table.core.windows.net/\&quot;,\n    \&quot;web\&quot;: \&quot;https://mazewebuipravada484.z20.web.core.windows.net/\&quot;\n  },\n  \&quot;primaryLocation\&quot;: \&quot;eastus2\&quot;,\n  \&quot;privateEndpointConnections\&quot;: [],\n  \&quot;provisioningState\&quot;: \&quot;Succeeded\&quot;,\n  \&quot;publicNetworkAccess\&quot;: null,\n  \&quot;resourceGroup\&quot;: \&quot;rg-maze-foundry-lab\&quot;,\n  \&quot;routingPreference\&quot;: null,\n  \&quot;sasPolicy\&quot;: null,\n  \&quot;secondaryEndpoints\&quot;: null,\n  \&quot;secondaryLocation\&quot;: null,\n  \&quot;sku\&quot;: {\n    \&quot;name\&quot;: \&quot;Standard_LRS\&quot;,\n    \&quot;tier\&quot;: \&quot;Standard\&quot;\n  },\n  \&quot;statusOfPrimary\&quot;: \&quot;available\&quot;,\n  \&quot;statusOfSecondary\&quot;: null,\n  \&quot;storageAccountSkuConversionStatus\&quot;: null,\n  \&quot;tags\&quot;: {},\n  \&quot;type\&quot;: \&quot;Microsoft.Storage/storageAccounts\&quot;\n}&quot;, &quot;stderr_tail&quot;: &quot;WARNING: The public access to all blobs or containers in the storage account will be disallowed by default in the future, which means default value for --allow-blob-public-access is still null but will be equivalent to false.&quot;}</td></tr><tr><td>Functionapp Create</td><td>{&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;g\&quot;: null\n      }\n    ],\n    \&quot;scmIpSecurityRestrictionsDefaultAction\&quot;: null,\n    \&quot;scmIpSecurityRestrictionsUseMain\&quot;: null,\n    \&quot;scmMinTlsCipherSuite\&quot;: null,\n    \&quot;scmMinTlsVersion\&quot;: null,\n    \&quot;scmSupportedTlsCipherSuites\&quot;: null,\n    \&quot;scmType\&quot;: null,\n    \&quot;sitePort\&quot;: null,\n    \&quot;sitePrivateLinkHostEnabled\&quot;: null,\n    \&quot;storageType\&quot;: null,\n    \&quot;supportedTlsCipherSuites\&quot;: null,\n    \&quot;tracingOptions\&quot;: null,\n    \&quot;use32BitWorkerProcess\&quot;: null,\n    \&quot;virtualApplications\&quot;: null,\n    \&quot;vnetName\&quot;: null,\n    \&quot;vnetPrivatePortsCount\&quot;: null,\n    \&quot;vnetRouteAllEnabled\&quot;: null,\n    \&quot;webJobsEnabled\&quot;: false,\n    \&quot;webSocketsEnabled\&quot;: null,\n    \&quot;websiteTimeZone\&quot;: null,\n    \&quot;winAuthAdminState\&quot;: null,\n    \&quot;winAuthTenantState\&quot;: null,\n    \&quot;windowsConfiguredStacks\&quot;: null,\n    \&quot;windowsFxVersion\&quot;: null,\n    \&quot;xManagedServiceIdentityId\&quot;: null\n  },\n  \&quot;slotSwapStatus\&quot;: null,\n  \&quot;state\&quot;: \&quot;Running\&quot;,\n  \&quot;storageAccountRequired\&quot;: false,\n  \&quot;suspendedTill\&quot;: null,\n  \&quot;tags\&quot;: null,\n  \&quot;targetSwapSlot\&quot;: null,\n  \&quot;trafficManagerHostNames\&quot;: null,\n  \&quot;type\&quot;: \&quot;Microsoft.Web/sites\&quot;,\n  \&quot;usageState\&quot;: \&quot;Normal\&quot;,\n  \&quot;virtualNetworkSubnetId\&quot;: null,\n  \&quot;vnetContentShareEnabled\&quot;: false,\n  \&quot;vnetImagePullEnabled\&quot;: false,\n  \&quot;vnetRouteAllEnabled\&quot;: false\n}&quot;, &quot;stderr_tail&quot;: &quot;WARNING: Your Linux function app &#x27;maze-webui-func-prav-ada483&#x27;, that uses a consumption plan has been successfully created but is not active until content is published using Azure Portal or the Functions Core Tools.\nWARNING: Application Insights \&quot;maze-webui-func-prav-ada483\&quot; was created for this Function App. You can visit https://portal.azure.com/#resource/subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/providers/microsoft.insights/components/maze-webui-func-prav-ada483/overview to view your Application Insights component\nWARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;}</td></tr><tr><td>Settings</td><td>{&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_AGENT_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;ENABLE_ORYX_BUILD\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  }\n]&quot;, &quot;stderr_tail&quot;: &quot;WARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;}</td></tr><tr><td>Identity</td><td>{&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;{\n  \&quot;principalId\&quot;: \&quot;3dd0a192-5ac9-4a76-9ba8-52ee5cfab0b0\&quot;,\n  \&quot;tenantId\&quot;: \&quot;f2181c31-3070-4153-8f9b-cca7d51ed62e\&quot;,\n  \&quot;type\&quot;: \&quot;SystemAssigned\&quot;,\n  \&quot;userAssignedIdentities\&quot;: null\n}&quot;, &quot;stderr_tail&quot;: &quot;&quot;}</td></tr><tr><td>Package Deploy</td><td>{&quot;status&quot;: &quot;deployed&quot;, &quot;storage_key&quot;: {&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;[redacted]&quot;, &quot;stderr_tail&quot;: &quot;&quot;}, &quot;container&quot;: {&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;{\n  \&quot;created\&quot;: false\n}&quot;, &quot;stderr_tail&quot;: &quot;&quot;}, &quot;upload&quot;: {&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;{\n  \&quot;client_request_id\&quot;: \&quot;33d614c2-a1a3-11f1-97c9-acde48001122\&quot;,\n  \&quot;content_md5\&quot;: \&quot;UCCRTl3jNiLLAYVhFATl5Q==\&quot;,\n  \&quot;date\&quot;: \&quot;2026-08-26T23:09:34+00:00\&quot;,\n  \&quot;encryption_key_sha256\&quot;: null,\n  \&quot;encryption_scope\&quot;: null,\n  \&quot;etag\&quot;: \&quot;\\\&quot;0x8DF03C717F10FFF\\\&quot;\&quot;,\n  \&quot;lastModified\&quot;: \&quot;2026-08-26T23:09:34+00:00\&quot;,\n  \&quot;request_id\&quot;: \&quot;8d86eee3-601e-001f-26af-3509de000000\&quot;,\n  \&quot;request_server_encrypted\&quot;: true,\n  \&quot;version\&quot;: \&quot;2022-11-02\&quot;,\n  \&quot;version_id\&quot;: null\n}&quot;, &quot;stderr_tail&quot;: &quot;WARNING: Argument &#x27;--overwrite&#x27; is in preview and under development. Reference and support levels: https://aka.ms/CLI_refstatus\n\nAlive[################################################################]  100.0000%\nFinished[#############################################################]  100.0000%&quot;}, &quot;sas&quot;: {&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;[redacted]&quot;, &quot;stderr_tail&quot;: &quot;&quot;}, &quot;settings&quot;: {&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_AGENT_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;ENABLE_ORYX_BUILD\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_RUN_FROM_PACKAGE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  }\n]&quot;, &quot;stderr_tail&quot;: &quot;WARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;}, &quot;restart&quot;: {&quot;returncode&quot;: 0, &quot;stdout_tail&quot;: &quot;&quot;, &quot;stderr_tail&quot;: &quot;&quot;}, &quot;package_blob&quot;: &quot;https://mazewebuipravada484.blob.core.windows.net/packages/phase8_azure_webui_adapter.zip&quot;}</td></tr><tr><td>Url</td><td>https://maze-webui-func-prav-ada483.azurewebsites.net</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Report JSON</h2>
+        <details><summary>Open generated report</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 8,
+  &quot;phase_name&quot;: &quot;Azure-Hosted WebUI Adapter&quot;,
+  &quot;status&quot;: &quot;deployed&quot;,
+  &quot;learning_objective&quot;: &quot;Host the maze playback UI in Azure while proxying Foundry hosted-agent calls through a server-side managed identity.&quot;,
+  &quot;hosting_choice&quot;: {
+    &quot;service&quot;: &quot;Azure Functions&quot;,
+    &quot;sku&quot;: &quot;Consumption&quot;,
+    &quot;why&quot;: &quot;Small HTTP WebUI/proxy, no browser-side secrets, avoids the App Service plan quota issue.&quot;,
+    &quot;resource_group&quot;: &quot;rg-maze-foundry-lab&quot;,
+    &quot;function_location&quot;: &quot;eastus2&quot;,
+    &quot;function_app_name&quot;: &quot;maze-webui-func-prav-ada483&quot;,
+    &quot;storage_account&quot;: &quot;mazewebuipravada484&quot;
+  },
+  &quot;flow&quot;: {
+    &quot;browser&quot;: &quot;loads Azure-hosted HTML/JS&quot;,
+    &quot;backend&quot;: &quot;Azure Functions HTTP route /api/run&quot;,
+    &quot;auth&quot;: &quot;Web App managed identity gets Azure AI token server-side&quot;,
+    &quot;agent&quot;: &quot;calls maze-monolithic-agent responses endpoint&quot;,
+    &quot;rendering&quot;: &quot;trace JSON drives play/pause/replay maze timeline&quot;
+  },
+  &quot;package&quot;: {
+    &quot;path&quot;: &quot;webui/phase8-azure-webui&quot;,
+    &quot;packaged_files&quot;: [
+      &quot;function_app.py&quot;,
+      &quot;static/index.html&quot;,
+      &quot;static/sample_trace.json&quot;,
+      &quot;requirements.txt&quot;,
+      &quot;host.json&quot;
+    ],
+    &quot;vendored_dependencies&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;Collecting azure-functions&gt;=1.21.0\n  Using cached azure_functions-2.2.0-py3-none-any.whl.metadata (6.7 kB)\nCollecting werkzeug~=3.1.3 (from azure-functions&gt;=1.21.0)\n  Using cached werkzeug-3.1.8-py3-none-any.whl.metadata (4.0 kB)\nCollecting markupsafe&gt;=2.1.1 (from werkzeug~=3.1.3-&gt;azure-functions&gt;=1.21.0)\n  Using cached markupsafe-3.0.3-cp313-cp313-macosx_10_13_x86_64.whl.metadata (2.7 kB)\nUsing cached azure_functions-2.2.0-py3-none-any.whl (123 kB)\nUsing cached werkzeug-3.1.8-py3-none-any.whl (226 kB)\nUsing cached markupsafe-3.0.3-cp313-cp313-macosx_10_13_x86_64.whl (11 kB)\nInstalling collected packages: markupsafe, werkzeug, azure-functions\nSuccessfully installed azure-functions-2.2.0 markupsafe-3.0.3 werkzeug-3.1.8&quot;,
+      &quot;stderr_tail&quot;: &quot;ERROR: pip&#x27;s dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.\nstreamlit 1.47.0 requires pillow&lt;12,&gt;=7.1.0, but you have pillow 12.3.0 which is incompatible.&quot;
+    },
+    &quot;zip&quot;: &quot;runs/phase8_azure_webui_adapter.zip&quot;,
+    &quot;local_compile&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;
+    }
+  },
+  &quot;deployment&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;method&quot;: &quot;run_from_package_blob&quot;,
+    &quot;status&quot;: &quot;deployed&quot;,
+    &quot;storage&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;\&quot;: \&quot;mazewebuipravada484\&quot;,\n  \&quot;networkRuleSet\&quot;: {\n    \&quot;bypass\&quot;: \&quot;None\&quot;,\n    \&quot;defaultAction\&quot;: \&quot;Allow\&quot;,\n    \&quot;ipRules\&quot;: [],\n    \&quot;resourceAccessRules\&quot;: null,\n    \&quot;virtualNetworkRules\&quot;: []\n  },\n  \&quot;primaryEndpoints\&quot;: {\n    \&quot;blob\&quot;: \&quot;https://mazewebuipravada484.blob.core.windows.net/\&quot;,\n    \&quot;dfs\&quot;: \&quot;https://mazewebuipravada484.dfs.core.windows.net/\&quot;,\n    \&quot;file\&quot;: \&quot;https://mazewebuipravada484.file.core.windows.net/\&quot;,\n    \&quot;internetEndpoints\&quot;: null,\n    \&quot;microsoftEndpoints\&quot;: null,\n    \&quot;queue\&quot;: \&quot;https://mazewebuipravada484.queue.core.windows.net/\&quot;,\n    \&quot;table\&quot;: \&quot;https://mazewebuipravada484.table.core.windows.net/\&quot;,\n    \&quot;web\&quot;: \&quot;https://mazewebuipravada484.z20.web.core.windows.net/\&quot;\n  },\n  \&quot;primaryLocation\&quot;: \&quot;eastus2\&quot;,\n  \&quot;privateEndpointConnections\&quot;: [],\n  \&quot;provisioningState\&quot;: \&quot;Succeeded\&quot;,\n  \&quot;publicNetworkAccess\&quot;: null,\n  \&quot;resourceGroup\&quot;: \&quot;rg-maze-foundry-lab\&quot;,\n  \&quot;routingPreference\&quot;: null,\n  \&quot;sasPolicy\&quot;: null,\n  \&quot;secondaryEndpoints\&quot;: null,\n  \&quot;secondaryLocation\&quot;: null,\n  \&quot;sku\&quot;: {\n    \&quot;name\&quot;: \&quot;Standard_LRS\&quot;,\n    \&quot;tier\&quot;: \&quot;Standard\&quot;\n  },\n  \&quot;statusOfPrimary\&quot;: \&quot;available\&quot;,\n  \&quot;statusOfSecondary\&quot;: null,\n  \&quot;storageAccountSkuConversionStatus\&quot;: null,\n  \&quot;tags\&quot;: {},\n  \&quot;type\&quot;: \&quot;Microsoft.Storage/storageAccounts\&quot;\n}&quot;,
+      &quot;stderr_tail&quot;: &quot;WARNING: The public access to all blobs or containers in the storage account will be disallowed by default in the future, which means default value for --allow-blob-public-access is still null but will be equivalent to false.&quot;
+    },
+    &quot;functionapp_create&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;g\&quot;: null\n      }\n    ],\n    \&quot;scmIpSecurityRestrictionsDefaultAction\&quot;: null,\n    \&quot;scmIpSecurityRestrictionsUseMain\&quot;: null,\n    \&quot;scmMinTlsCipherSuite\&quot;: null,\n    \&quot;scmMinTlsVersion\&quot;: null,\n    \&quot;scmSupportedTlsCipherSuites\&quot;: null,\n    \&quot;scmType\&quot;: null,\n    \&quot;sitePort\&quot;: null,\n    \&quot;sitePrivateLinkHostEnabled\&quot;: null,\n    \&quot;storageType\&quot;: null,\n    \&quot;supportedTlsCipherSuites\&quot;: null,\n    \&quot;tracingOptions\&quot;: null,\n    \&quot;use32BitWorkerProcess\&quot;: null,\n    \&quot;virtualApplications\&quot;: null,\n    \&quot;vnetName\&quot;: null,\n    \&quot;vnetPrivatePortsCount\&quot;: null,\n    \&quot;vnetRouteAllEnabled\&quot;: null,\n    \&quot;webJobsEnabled\&quot;: false,\n    \&quot;webSocketsEnabled\&quot;: null,\n    \&quot;websiteTimeZone\&quot;: null,\n    \&quot;winAuthAdminState\&quot;: null,\n    \&quot;winAuthTenantState\&quot;: null,\n    \&quot;windowsConfiguredStacks\&quot;: null,\n    \&quot;windowsFxVersion\&quot;: null,\n    \&quot;xManagedServiceIdentityId\&quot;: null\n  },\n  \&quot;slotSwapStatus\&quot;: null,\n  \&quot;state\&quot;: \&quot;Running\&quot;,\n  \&quot;storageAccountRequired\&quot;: false,\n  \&quot;suspendedTill\&quot;: null,\n  \&quot;tags\&quot;: null,\n  \&quot;targetSwapSlot\&quot;: null,\n  \&quot;trafficManagerHostNames\&quot;: null,\n  \&quot;type\&quot;: \&quot;Microsoft.Web/sites\&quot;,\n  \&quot;usageState\&quot;: \&quot;Normal\&quot;,\n  \&quot;virtualNetworkSubnetId\&quot;: null,\n  \&quot;vnetContentShareEnabled\&quot;: false,\n  \&quot;vnetImagePullEnabled\&quot;: false,\n  \&quot;vnetRouteAllEnabled\&quot;: false\n}&quot;,
+      &quot;stderr_tail&quot;: &quot;WARNING: Your Linux function app &#x27;maze-webui-func-prav-ada483&#x27;, that uses a consumption plan has been successfully created but is not active until content is published using Azure Portal or the Functions Core Tools.\nWARNING: Application Insights \&quot;maze-webui-func-prav-ada483\&quot; was created for this Function App. You can visit https://portal.azure.com/#resource/subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/providers/microsoft.insights/components/maze-webui-func-prav-ada483/overview to view your Application Insights component\nWARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;
+    },
+    &quot;settings&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_AGENT_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;ENABLE_ORYX_BUILD\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  }\n]&quot;,
+      &quot;stderr_tail&quot;: &quot;WARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;
+    },
+    &quot;identity&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;{\n  \&quot;principalId\&quot;: \&quot;3dd0a192-5ac9-4a76-9ba8-52ee5cfab0b0\&quot;,\n  \&quot;tenantId\&quot;: \&quot;f2181c31-3070-4153-8f9b-cca7d51ed62e\&quot;,\n  \&quot;type\&quot;: \&quot;SystemAssigned\&quot;,\n  \&quot;userAssignedIdentities\&quot;: null\n}&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;
+    },
+    &quot;package_deploy&quot;: {
+      &quot;status&quot;: &quot;deployed&quot;,
+      &quot;storage_key&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;[redacted]&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;
+      },
+      &quot;container&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;{\n  \&quot;created\&quot;: false\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;
+      },
+      &quot;upload&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;{\n  \&quot;client_request_id\&quot;: \&quot;33d614c2-a1a3-11f1-97c9-acde48001122\&quot;,\n  \&quot;content_md5\&quot;: \&quot;UCCRTl3jNiLLAYVhFATl5Q==\&quot;,\n  \&quot;date\&quot;: \&quot;2026-08-26T23:09:34+00:00\&quot;,\n  \&quot;encryption_key_sha256\&quot;: null,\n  \&quot;encryption_scope\&quot;: null,\n  \&quot;etag\&quot;: \&quot;\\\&quot;0x8DF03C717F10FFF\\\&quot;\&quot;,\n  \&quot;lastModified\&quot;: \&quot;2026-08-26T23:09:34+00:00\&quot;,\n  \&quot;request_id\&quot;: \&quot;8d86eee3-601e-001f-26af-3509de000000\&quot;,\n  \&quot;request_server_encrypted\&quot;: true,\n  \&quot;version\&quot;: \&quot;2022-11-02\&quot;,\n  \&quot;version_id\&quot;: null\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;WARNING: Argument &#x27;--overwrite&#x27; is in preview and under development. Reference and support levels: https://aka.ms/CLI_refstatus\n\nAlive[################################################################]  100.0000%\nFinished[#############################################################]  100.0000%&quot;
+      },
+      &quot;sas&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;[redacted]&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;
+      },
+      &quot;settings&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_AGENT_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;ENABLE_ORYX_BUILD\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_RUN_FROM_PACKAGE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  }\n]&quot;,
+        &quot;stderr_tail&quot;: &quot;WARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;
+      },
+      &quot;restart&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;
+      },
+      &quot;package_blob&quot;: &quot;https://mazewebuipravada484.blob.core.windows.net/packages/phase8_azure_webui_adapter.zip&quot;
+    },
+    &quot;url&quot;: &quot;https://maze-webui-func-prav-ada483.azurewebsites.net&quot;
+  },
+  &quot;rbac_required&quot;: {
+    &quot;hosted_agent_managed_identity&quot;: &quot;az role assignment create --assignee ef0c0ce9-ae88-416e-8619-637a4d6f4c96 --role \&quot;Cognitive Services OpenAI User\&quot; --scope /subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/providers/Microsoft.CognitiveServices/accounts/maze-foundry-prav-ada483&quot;,
+    &quot;webui_managed_identity&quot;: &quot;az role assignment create --assignee 3dd0a192-5ac9-4a76-9ba8-52ee5cfab0b0 --role \&quot;Foundry User\&quot; --scope /subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/providers/Microsoft.CognitiveServices/accounts/maze-foundry-prav-ada483/projects/maze-migration-lab&quot;
+  },
+  &quot;summary&quot;: {
+    &quot;azure_webui_package_created&quot;: true,
+    &quot;azure_webui_deployed&quot;: true,
+    &quot;browser_side_secrets&quot;: 0,
+    &quot;new_persistent_services&quot;: 2,
+    &quot;hosted_agent_calls_from_browser&quot;: 1,
+    &quot;live_webui_trace_provider&quot;: &quot;foundry&quot;,
+    &quot;live_webui_llm_calls_observed&quot;: 17,
+    &quot;estimated_cost&quot;: &quot;Azure Functions Consumption free grant for light traffic plus minimal storage account cost; model calls occur only when Run Hosted Agent is clicked.&quot;,
+    &quot;next_phase&quot;: &quot;Proceed to Phase 9: start splitting the hosted runtime boundary, beginning with the Maze Tool interface.&quot;
+  }
+}</pre></details>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

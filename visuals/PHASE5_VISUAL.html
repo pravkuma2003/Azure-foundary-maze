@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 5</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1180px, calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    p { margin:0; color:var(--muted); }
+    .panel,.summary,.step { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:16px; }
+    .summary strong { display:block; font-size:30px; text-transform:capitalize; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .metric { border:1px solid var(--line); border-radius:8px; padding:14px; background:#fff; }
+    .metric span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:6px; font-size:26px; }
+    .flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .step { box-shadow:none; min-height:125px; border-left:5px solid var(--blue); }
+    .step:nth-child(4) { border-left-color:var(--green); }
+    .step span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#111827; background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    .answer { border-left:5px solid var(--green); padding:14px; background:#eef8f3; border-radius:8px; color:#17202a; }
+    .stack { display:grid; gap:14px; }
+    @media (max-width:900px) { header,.metrics,.flow { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 5 - Model Provider Adapter</h1>
+        <p>Keep the maze code local while switching the model backend to Azure Foundry.</p>
+      </div>
+      <aside class="summary">
+        <span>Status</span>
+        <strong>complete</strong>
+        <p>Hosted agents created: 0.</p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Phase Metrics</h2>
+        <div class="metrics">
+          <div class="metric"><span>Local Code</span><strong>yes</strong></div>
+          <div class="metric"><span>Foundry Calls</span><strong>1</strong></div>
+          <div class="metric"><span>Hosted Agents</span><strong>0</strong></div>
+          <div class="metric"><span>Token Cost</span><strong>tiny</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Provider Flow</h2>
+        <div class="flow">
+          <article class="step"><span>1. Local Python</span><strong>Mac/Linux code</strong><p>The maze program still runs outside Azure.</p></article>
+          <article class="step"><span>2. Adapter</span><strong>foundry provider</strong><p>The provider boundary chooses Azure instead of LiteLLM.</p></article>
+          <article class="step"><span>3. Endpoint</span><strong>Foundry project</strong><p>The call uses Entra ID, not a checked-in key.</p></article>
+          <article class="step"><span>4. Deployment</span><strong>gpt41mini-maze</strong><p>The model returns the first tiny response.</p></article>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Test Response</h2>
+        <p class="answer">foundry adapter ready</p>
+      </section>
+      <section class="panel">
+        <h2>Provider Boundary</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Local Provider</td><td>Pydantic AI -&gt; local OpenAI-compatible LiteLLM/Ollama endpoint</td></tr><tr><td>Foundry Provider</td><td>Pydantic AI -&gt; local adapter -&gt; Foundry project endpoint -&gt; deployed model</td></tr><tr><td>Agent Code Deployed To Azure</td><td>False</td></tr><tr><td>Hosted Agents Created</td><td>0</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Foundry Target</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Project Endpoint</td><td>https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab</td></tr><tr><td>Deployment Name</td><td>gpt41mini-maze</td></tr><tr><td>Auth Mode</td><td>Azure CLI Entra ID token</td></tr><tr><td>Api Path</td><td>/openai/v1/responses</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>RBAC Lesson</h2>
+        <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Project Scope Role</td><td>Foundry User</td></tr><tr><td>Account Scope Role</td><td>Cognitive Services OpenAI User</td></tr><tr><td>Why</td><td>Project endpoint access and model inference data actions are separate checks.</td></tr><tr><td>Subscription Scope Role Added</td><td>False</td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <h2>Next Phase</h2>
+        <p>Run the Analyst role through the Foundry provider while keeping the maze tools local.</p>
+      </section>
+      <section class="panel">
+        <h2>Report JSON</h2>
+        <details><summary>Open generated report</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 5,
+  &quot;phase_name&quot;: &quot;Model Provider Adapter&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;local_code_location&quot;: &quot;Mac/Linux&quot;,
+  &quot;provider_boundary&quot;: {
+    &quot;local_provider&quot;: &quot;Pydantic AI -&gt; local OpenAI-compatible LiteLLM/Ollama endpoint&quot;,
+    &quot;foundry_provider&quot;: &quot;Pydantic AI -&gt; local adapter -&gt; Foundry project endpoint -&gt; deployed model&quot;,
+    &quot;agent_code_deployed_to_azure&quot;: false,
+    &quot;hosted_agents_created&quot;: 0
+  },
+  &quot;foundry_target&quot;: {
+    &quot;project_endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+    &quot;deployment_name&quot;: &quot;gpt41mini-maze&quot;,
+    &quot;auth_mode&quot;: &quot;Azure CLI Entra ID token&quot;,
+    &quot;api_path&quot;: &quot;/openai/v1/responses&quot;
+  },
+  &quot;rbac&quot;: {
+    &quot;project_scope_role&quot;: &quot;Foundry User&quot;,
+    &quot;account_scope_role&quot;: &quot;Cognitive Services OpenAI User&quot;,
+    &quot;why&quot;: &quot;Project endpoint access and model inference data actions are separate checks.&quot;,
+    &quot;subscription_scope_role_added&quot;: false
+  },
+  &quot;test_call&quot;: {
+    &quot;prompt&quot;: &quot;Reply with exactly: foundry adapter ready&quot;,
+    &quot;max_output_tokens&quot;: 24,
+    &quot;temperature&quot;: 0.0,
+    &quot;made&quot;: true,
+    &quot;success&quot;: true,
+    &quot;response&quot;: {
+      &quot;provider&quot;: &quot;foundry&quot;,
+      &quot;deployment_name&quot;: &quot;gpt41mini-maze&quot;,
+      &quot;response_id&quot;: &quot;resp_005a5e0e8acd2806006a8f2b9e11cc8195b04eee4a64a59b16&quot;,
+      &quot;output_text&quot;: &quot;foundry adapter ready&quot;,
+      &quot;usage&quot;: {
+        &quot;input_tokens&quot;: 15,
+        &quot;input_tokens_details&quot;: {
+          &quot;cached_tokens&quot;: 0,
+          &quot;cache_write_tokens&quot;: 0
+        },
+        &quot;output_tokens&quot;: 5,
+        &quot;output_tokens_details&quot;: {
+          &quot;reasoning_tokens&quot;: 0
+        },
+        &quot;total_tokens&quot;: 20
+      },
+      &quot;request_path&quot;: &quot;/openai/v1/responses&quot;,
+      &quot;auth_mode&quot;: &quot;azure_cli_entra_id&quot;
+    },
+    &quot;error&quot;: &quot;&quot;
+  },
+  &quot;summary&quot;: {
+    &quot;model_backend&quot;: &quot;Azure Foundry&quot;,
+    &quot;local_maze_code_changed&quot;: false,
+    &quot;provider_adapter_added&quot;: true,
+    &quot;inference_calls_made&quot;: 1,
+    &quot;hosted_agents_created&quot;: 0,
+    &quot;estimated_cost&quot;: &quot;tiny pay-per-token test call&quot;,
+    &quot;total_tokens&quot;: 20,
+    &quot;next_phase&quot;: &quot;Run the Analyst role through the Foundry provider while keeping the maze tools local.&quot;
+  }
+}</pre></details>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

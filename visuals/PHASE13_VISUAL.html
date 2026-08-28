@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 13</title>
+  <style>
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f7f8fa; color:#17202a; line-height:1.5; }
+    main { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:18px; border-bottom:1px solid #d9dee7; padding-bottom:20px; margin-bottom:20px; }
+    h1 { margin:0 0 8px; font-size:clamp(30px,4vw,44px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    p { margin:0; color:#5f6b7a; }
+    .panel,.metric,.node { background:#fff; border:1px solid #d9dee7; border-radius:8px; box-shadow:0 10px 28px rgba(28,36,48,.08); padding:16px; }
+    .metric strong { display:block; font-size:28px; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .diagram { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; align-items:start; }
+    .node strong { display:block; font-size:17px; }
+    .node span { color:#5f6b7a; font-weight:800; font-size:12px; text-transform:uppercase; }
+    .memory { border-left:5px solid #9a6500; }
+    .agent { border-left:5px solid #285da8; }
+    .worker { border-left-color:#1f6f5b; }
+    table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #d9dee7; border-radius:8px; overflow:hidden; }
+    th,td { padding:10px; border-bottom:1px solid #e6eaf1; text-align:left; vertical-align:top; }
+    th { background:#eef2f7; }
+    pre { white-space:pre-wrap; background:#111827; color:#e5e7eb; border-radius:8px; padding:14px; overflow:auto; }
+    @media (max-width:900px) { header,.grid,.diagram { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Phase 13 - Independent Foundry-Hosted Role Agents</h1>
+      <p>Split the monolithic maze runtime into separate Foundry-hosted Analyst, Worker A, and Worker B agents.</p>
+    </div>
+    <aside class="metric"><span>Status</span><strong>complete</strong><p>Mode: apply</p></aside>
+  </header>
+  <section class="diagram">
+    <article class="node agent"><span>Hosted Agent</span><strong>maze-analyst-agent</strong><p>Writes assignment and coordination boundary to Team Memory.</p></article>
+    <article class="node memory"><span>Coordinator Memory</span><strong>Request-Scoped Team Memory</strong><p>Visible boundary now; durable Azure backend is deferred to the next phase.</p></article>
+    <article class="node agent worker"><span>Hosted Agents</span><strong>maze-worker-agent-a / b</strong><p>Read assignment, reason locally, call the Foundry toolbox MCP Maze Tool, publish result.</p></article>
+  </section>
+  <section class="grid" style="margin-top:14px">
+    <article class="panel"><h2>Before</h2><p>one maze-monolithic-agent contains Analyst, Worker A, Worker B, orchestrator, memory, and tool client</p></article>
+    <article class="panel"><h2>After</h2><p>maze-analyst-agent, maze-worker-agent-a, and maze-worker-agent-b run as independent Foundry-hosted role agents</p></article>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Role Split</h2>
+    <table><thead><tr><th>Hosted Agent</th><th>Role</th><th>Responsibility</th><th>Uses MCP Tool</th></tr></thead><tbody><tr><td>maze-analyst-agent</td><td>Analyst</td><td>global assignment and Team Memory writes</td><td>False</td></tr><tr><td>maze-worker-agent-a</td><td>Worker Agent A</td><td>Maze A local reasoning and result publication</td><td>True</td></tr><tr><td>maze-worker-agent-b</td><td>Worker Agent B</td><td>Maze B local reasoning and result publication</td><td>True</td></tr></tbody></table>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Validation</h2>
+    <table><thead><tr><th>Role</th><th>Status</th><th>Summary</th></tr></thead><tbody><tr><td>analyst</td><td>passed</td><td>{&#x27;llm_calls&#x27;: 0, &#x27;maze_tool_calls&#x27;: 0, &#x27;uses_pydantic_ai&#x27;: True, &#x27;owns&#x27;: &#x27;global multi-worker assignment&#x27;}</td></tr><tr><td>worker_a</td><td>passed</td><td>{&#x27;llm_calls&#x27;: 0, &#x27;maze_tool_calls&#x27;: 16, &#x27;uses_pydantic_ai&#x27;: True, &#x27;owns&#x27;: &#x27;Maze A local reasoning, Maze Tool calls, and local memory&#x27;}</td></tr><tr><td>worker_b</td><td>passed</td><td>{&#x27;llm_calls&#x27;: 0, &#x27;maze_tool_calls&#x27;: 16, &#x27;uses_pydantic_ai&#x27;: True, &#x27;owns&#x27;: &#x27;Maze B local reasoning, Maze Tool calls, and local memory&#x27;}</td></tr></tbody></table>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Live WebUI Result</h2>
+    <table><tbody><tr><th>Source</th><td>foundry-split-role-agents</td></tr><tr><th>Hosted Role Agents</th><td>3</td></tr><tr><th>LLM Calls</th><td>17 / 25</td></tr><tr><th>Foundry Toolbox MCP Calls</th><td>32</td></tr><tr><th>Direct HTTP Tool Calls</th><td>0</td></tr></tbody></table>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Raw Report</h2>
+    <details><summary>Open JSON</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 13,
+  &quot;phase_name&quot;: &quot;Independent Foundry-Hosted Role Agents&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;mode&quot;: &quot;apply&quot;,
+  &quot;learning_objective&quot;: &quot;Split the monolithic maze runtime into separate Foundry-hosted Analyst, Worker A, and Worker B agents.&quot;,
+  &quot;architecture&quot;: {
+    &quot;before&quot;: &quot;one maze-monolithic-agent contains Analyst, Worker A, Worker B, orchestrator, memory, and tool client&quot;,
+    &quot;after&quot;: &quot;maze-analyst-agent, maze-worker-agent-a, and maze-worker-agent-b run as independent Foundry-hosted role agents&quot;,
+    &quot;shared_memory_scope&quot;: &quot;request-scoped Team Memory passed by the coordinator; durable Azure storage is intentionally deferred&quot;,
+    &quot;tool_boundary&quot;: &quot;Worker agents keep using the Foundry toolbox MCP endpoint for Maze Tool calls&quot;
+  },
+  &quot;role_agents&quot;: [
+    {
+      &quot;name&quot;: &quot;maze-analyst-agent&quot;,
+      &quot;role&quot;: &quot;Analyst&quot;,
+      &quot;responsibility&quot;: &quot;global assignment and Team Memory writes&quot;,
+      &quot;uses_pydantic_ai&quot;: true,
+      &quot;uses_maze_tool_mcp&quot;: false
+    },
+    {
+      &quot;name&quot;: &quot;maze-worker-agent-a&quot;,
+      &quot;role&quot;: &quot;Worker Agent A&quot;,
+      &quot;responsibility&quot;: &quot;Maze A local reasoning and result publication&quot;,
+      &quot;uses_pydantic_ai&quot;: true,
+      &quot;uses_maze_tool_mcp&quot;: true
+    },
+    {
+      &quot;name&quot;: &quot;maze-worker-agent-b&quot;,
+      &quot;role&quot;: &quot;Worker Agent B&quot;,
+      &quot;responsibility&quot;: &quot;Maze B local reasoning and result publication&quot;,
+      &quot;uses_pydantic_ai&quot;: true,
+      &quot;uses_maze_tool_mcp&quot;: true
+    }
+  ],
+  &quot;local_validation&quot;: {
+    &quot;analyst&quot;: {
+      &quot;hosted_agent_name&quot;: &quot;maze-analyst-agent&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;command&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;nt\&quot;: \&quot;Assign Maze A to Worker Agent A and Maze B to Worker Agent B. Each Worker owns its own maze tools, local memory, and synchronization decisions.\&quot;,\n      \&quot;coordination_boundary\&quot;: \&quot;The Analyst does not choose step-by-step moves for either maze, and the deterministic Orchestrator only dispatches assignments.\&quot;,\n      \&quot;confidence\&quot;: 0.92,\n      \&quot;llm_call_count\&quot;: 0\n    },\n    \&quot;team_memory_reads\&quot;: [],\n    \&quot;team_memory_writes\&quot;: [\n      {\n        \&quot;key\&quot;: \&quot;mission\&quot;,\n        \&quot;value\&quot;: \&quot;Solve Maze A and Maze B independently.\&quot;\n      },\n      {\n        \&quot;key\&quot;: \&quot;assignment.maze_a\&quot;,\n        \&quot;value\&quot;: \&quot;Worker Agent A owns Maze A.\&quot;\n      },\n      {\n        \&quot;key\&quot;: \&quot;assignment.maze_b\&quot;,\n        \&quot;value\&quot;: \&quot;Worker Agent B owns Maze B.\&quot;\n      },\n      {\n        \&quot;key\&quot;: \&quot;coordination_boundary\&quot;,\n        \&quot;value\&quot;: \&quot;The Analyst does not choose step-by-step moves for either maze, and the deterministic Orchestrator only dispatches assignments.\&quot;\n      }\n    ],\n    \&quot;events\&quot;: [\n      {\n        \&quot;type\&quot;: \&quot;plan\&quot;,\n        \&quot;actor\&quot;: \&quot;Analyst Agent\&quot;,\n        \&quot;target\&quot;: \&quot;Team Memory\&quot;,\n        \&quot;label\&quot;: \&quot;global assignment\&quot;,\n        \&quot;detail\&quot;: \&quot;Assign Maze A to Worker Agent A and Maze B to Worker Agent B. Each Worker owns its own maze tools, local memory, and synchronization decisions.\&quot;,\n        \&quot;llm_call_count\&quot;: 0\n      }\n    ],\n    \&quot;summary\&quot;: {\n      \&quot;llm_calls\&quot;: 0,\n      \&quot;maze_tool_calls\&quot;: 0,\n      \&quot;uses_pydantic_ai\&quot;: true,\n      \&quot;owns\&quot;: \&quot;global multi-worker assignment\&quot;\n    }\n  },\n  \&quot;summary\&quot;: {\n    \&quot;llm_calls\&quot;: 0,\n    \&quot;maze_tool_calls\&quot;: 0,\n    \&quot;uses_pydantic_ai\&quot;: true,\n    \&quot;owns\&quot;: \&quot;global multi-worker assignment\&quot;\n  }\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;python3&quot;,
+          &quot;main.py&quot;,
+          &quot;--once&quot;,
+          &quot;--provider&quot;,
+          &quot;test&quot;,
+          &quot;--role&quot;,
+          &quot;analyst&quot;
+        ]
+      },
+      &quot;summary&quot;: {
+        &quot;llm_calls&quot;: 0,
+        &quot;maze_tool_calls&quot;: 0,
+        &quot;uses_pydantic_ai&quot;: true,
+        &quot;owns&quot;: &quot;global multi-worker assignment&quot;
+      },
+      &quot;result_keys&quot;: [
+        &quot;agent&quot;,
+        &quot;events&quot;,
+        &quot;hosted_agent_name&quot;,
+        &quot;output&quot;,
+        &quot;phase&quot;,
+        &quot;role&quot;,
+        &quot;status&quot;,
+        &quot;summary&quot;,
+        &quot;team_memory_reads&quot;,
+        &quot;team_memory_writes&quot;
+      ]
+    },
+    &quot;worker_a&quot;: {
+      &quot;hosted_agent_name&quot;: &quot;maze-worker-agent-a&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;command&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;h through Maze Tool: (2, 4) -&gt; (3, 4).\&quot;,\n        \&quot;position\&quot;: [\n          3,\n          4\n        ],\n        \&quot;tool_runtime\&quot;: \&quot;in-process\&quot;,\n        \&quot;llm_call_count\&quot;: 0\n      },\n      {\n        \&quot;type\&quot;: \&quot;decision\&quot;,\n        \&quot;actor\&quot;: \&quot;Worker Agent A\&quot;,\n        \&quot;target\&quot;: \&quot;Maze A\&quot;,\n        \&quot;maze_id\&quot;: \&quot;maze_a\&quot;,\n        \&quot;label\&quot;: \&quot;choose south\&quot;,\n        \&quot;detail\&quot;: \&quot;Worker Agent A chooses south from (3, 4) using current legal moves, visited memory, and goal direction.\&quot;,\n        \&quot;position\&quot;: [\n          3,\n          4\n        ],\n        \&quot;llm_call_count\&quot;: 0\n      },\n      {\n        \&quot;type\&quot;: \&quot;move\&quot;,\n        \&quot;actor\&quot;: \&quot;Worker Agent A\&quot;,\n        \&quot;target\&quot;: \&quot;Maze A\&quot;,\n        \&quot;maze_id\&quot;: \&quot;maze_a\&quot;,\n        \&quot;label\&quot;: \&quot;move south\&quot;,\n        \&quot;detail\&quot;: \&quot;Worker Agent A applied south through Maze Tool: (3, 4) -&gt; (4, 4).\&quot;,\n        \&quot;position\&quot;: [\n          4,\n          4\n        ],\n        \&quot;tool_runtime\&quot;: \&quot;in-process\&quot;,\n        \&quot;llm_call_count\&quot;: 0\n      },\n      {\n        \&quot;type\&quot;: \&quot;result\&quot;,\n        \&quot;actor\&quot;: \&quot;Worker Agent A\&quot;,\n        \&quot;target\&quot;: \&quot;Team Memory\&quot;,\n        \&quot;maze_id\&quot;: \&quot;maze_a\&quot;,\n        \&quot;label\&quot;: \&quot;publish completion\&quot;,\n        \&quot;detail\&quot;: \&quot;Worker Agent A completed Maze A at goal (4, 4).\&quot;,\n        \&quot;memory_scope\&quot;: \&quot;shared\&quot;,\n        \&quot;llm_call_count\&quot;: 0\n      }\n    ],\n    \&quot;summary\&quot;: {\n      \&quot;llm_calls\&quot;: 0,\n      \&quot;maze_tool_calls\&quot;: 16,\n      \&quot;uses_pydantic_ai\&quot;: true,\n      \&quot;owns\&quot;: \&quot;Maze A local reasoning, Maze Tool calls, and local memory\&quot;\n    }\n  },\n  \&quot;summary\&quot;: {\n    \&quot;llm_calls\&quot;: 0,\n    \&quot;maze_tool_calls\&quot;: 16,\n    \&quot;uses_pydantic_ai\&quot;: true,\n    \&quot;owns\&quot;: \&quot;Maze A local reasoning, Maze Tool calls, and local memory\&quot;\n  }\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;python3&quot;,
+          &quot;main.py&quot;,
+          &quot;--once&quot;,
+          &quot;--provider&quot;,
+          &quot;test&quot;,
+          &quot;--role&quot;,
+          &quot;worker_a&quot;
+        ]
+      },
+      &quot;summary&quot;: {
+        &quot;llm_calls&quot;: 0,
+        &quot;maze_tool_calls&quot;: 16,
+        &quot;uses_pydantic_ai&quot;: true,
+        &quot;owns&quot;: &quot;Maze A local reasoning, Maze Tool calls, and local memory&quot;
+      },
+      &quot;result_keys&quot;: [
+        &quot;agent&quot;,
+        &quot;events&quot;,
+        &quot;hosted_agent_name&quot;,
+        &quot;maze_id&quot;,
+        &quot;maze_label&quot;,
+        &quot;move_decisions&quot;,
+        &quot;output&quot;,
+        &quot;phase&quot;,
+        &quot;role&quot;,
+        &quot;status&quot;,
+        &quot;summary&quot;,
+        &quot;team_memory_reads&quot;,
+        &quot;team_memory_writes&quot;
+      ]
+    },
+    &quot;worker_b&quot;: {
+      &quot;hosted_agent_name&quot;: &quot;maze-worker-agent-b&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;command&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;h through Maze Tool: (2, 4) -&gt; (3, 4).\&quot;,\n        \&quot;position\&quot;: [\n          3,\n          4\n        ],\n        \&quot;tool_runtime\&quot;: \&quot;in-process\&quot;,\n        \&quot;llm_call_count\&quot;: 0\n      },\n      {\n        \&quot;type\&quot;: \&quot;decision\&quot;,\n        \&quot;actor\&quot;: \&quot;Worker Agent B\&quot;,\n        \&quot;target\&quot;: \&quot;Maze B\&quot;,\n        \&quot;maze_id\&quot;: \&quot;maze_b\&quot;,\n        \&quot;label\&quot;: \&quot;choose south\&quot;,\n        \&quot;detail\&quot;: \&quot;Worker Agent B chooses south from (3, 4) using current legal moves, visited memory, and goal direction.\&quot;,\n        \&quot;position\&quot;: [\n          3,\n          4\n        ],\n        \&quot;llm_call_count\&quot;: 0\n      },\n      {\n        \&quot;type\&quot;: \&quot;move\&quot;,\n        \&quot;actor\&quot;: \&quot;Worker Agent B\&quot;,\n        \&quot;target\&quot;: \&quot;Maze B\&quot;,\n        \&quot;maze_id\&quot;: \&quot;maze_b\&quot;,\n        \&quot;label\&quot;: \&quot;move south\&quot;,\n        \&quot;detail\&quot;: \&quot;Worker Agent B applied south through Maze Tool: (3, 4) -&gt; (4, 4).\&quot;,\n        \&quot;position\&quot;: [\n          4,\n          4\n        ],\n        \&quot;tool_runtime\&quot;: \&quot;in-process\&quot;,\n        \&quot;llm_call_count\&quot;: 0\n      },\n      {\n        \&quot;type\&quot;: \&quot;result\&quot;,\n        \&quot;actor\&quot;: \&quot;Worker Agent B\&quot;,\n        \&quot;target\&quot;: \&quot;Team Memory\&quot;,\n        \&quot;maze_id\&quot;: \&quot;maze_b\&quot;,\n        \&quot;label\&quot;: \&quot;publish completion\&quot;,\n        \&quot;detail\&quot;: \&quot;Worker Agent B completed Maze B at goal (4, 4).\&quot;,\n        \&quot;memory_scope\&quot;: \&quot;shared\&quot;,\n        \&quot;llm_call_count\&quot;: 0\n      }\n    ],\n    \&quot;summary\&quot;: {\n      \&quot;llm_calls\&quot;: 0,\n      \&quot;maze_tool_calls\&quot;: 16,\n      \&quot;uses_pydantic_ai\&quot;: true,\n      \&quot;owns\&quot;: \&quot;Maze B local reasoning, Maze Tool calls, and local memory\&quot;\n    }\n  },\n  \&quot;summary\&quot;: {\n    \&quot;llm_calls\&quot;: 0,\n    \&quot;maze_tool_calls\&quot;: 16,\n    \&quot;uses_pydantic_ai\&quot;: true,\n    \&quot;owns\&quot;: \&quot;Maze B local reasoning, Maze Tool calls, and local memory\&quot;\n  }\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;python3&quot;,
+          &quot;main.py&quot;,
+          &quot;--once&quot;,
+          &quot;--provider&quot;,
+          &quot;test&quot;,
+          &quot;--role&quot;,
+          &quot;worker_b&quot;
+        ]
+      },
+      &quot;summary&quot;: {
+        &quot;llm_calls&quot;: 0,
+        &quot;maze_tool_calls&quot;: 16,
+        &quot;uses_pydantic_ai&quot;: true,
+        &quot;owns&quot;: &quot;Maze B local reasoning, Maze Tool calls, and local memory&quot;
+      },
+      &quot;result_keys&quot;: [
+        &quot;agent&quot;,
+        &quot;events&quot;,
+        &quot;hosted_agent_name&quot;,
+        &quot;maze_id&quot;,
+        &quot;maze_label&quot;,
+        &quot;move_decisions&quot;,
+        &quot;output&quot;,
+        &quot;phase&quot;,
+        &quot;role&quot;,
+        &quot;status&quot;,
+        &quot;summary&quot;,
+        &quot;team_memory_reads&quot;,
+        &quot;team_memory_writes&quot;
+      ]
+    }
+  },
+  &quot;toolbox&quot;: {
+    &quot;name&quot;: &quot;maze-toolbox&quot;,
+    &quot;mcp_endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1&quot;,
+    &quot;lookup&quot;: {
+      &quot;endpoint_found&quot;: true,
+      &quot;command&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;           {\n                      \&quot;functionKey\&quot;: []\n                    }\n                  ],\n                  \&quot;summary\&quot;: \&quot;Return legal moves from the current maze position.\&quot;\n                }\n              },\n              \&quot;/api/maze/move\&quot;: {\n                \&quot;post\&quot;: {\n                  \&quot;operationId\&quot;: \&quot;moveInMaze\&quot;,\n                  \&quot;requestBody\&quot;: {\n                    \&quot;content\&quot;: {\n                      \&quot;application/json\&quot;: {\n                        \&quot;schema\&quot;: {\n                          \&quot;$ref\&quot;: \&quot;#/components/schemas/MoveRequest\&quot;\n                        }\n                      }\n                    },\n                    \&quot;required\&quot;: true\n                  },\n                  \&quot;responses\&quot;: {\n                    \&quot;200\&quot;: {\n                      \&quot;content\&quot;: {\n                        \&quot;application/json\&quot;: {\n                          \&quot;schema\&quot;: {\n                            \&quot;$ref\&quot;: \&quot;#/components/schemas/MazeToolResult\&quot;\n                          }\n                        }\n                      },\n                      \&quot;description\&quot;: \&quot;Validated move result\&quot;\n                    }\n                  },\n                  \&quot;security\&quot;: [\n                    {\n                      \&quot;functionKey\&quot;: []\n                    }\n                  ],\n                  \&quot;summary\&quot;: \&quot;Validate and apply a requested maze move.\&quot;\n                }\n              }\n            },\n            \&quot;servers\&quot;: [\n              {\n                \&quot;url\&quot;: \&quot;https://maze-tool-func-prav-ada483.azurewebsites.net\&quot;\n              }\n            ]\n          }\n        },\n        \&quot;type\&quot;: \&quot;openapi\&quot;\n      }\n    ],\n    \&quot;skills\&quot;: []\n  }\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;2026/08/27 08:10:14 toolbox show: resolved project endpoint https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab (source=flag)&quot;,
+        &quot;command&quot;: [
+          &quot;azd&quot;,
+          &quot;ai&quot;,
+          &quot;toolbox&quot;,
+          &quot;show&quot;,
+          &quot;maze-toolbox&quot;,
+          &quot;--project-endpoint&quot;,
+          &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      }
+    }
+  },
+  &quot;hosted_agent_environment&quot;: {
+    &quot;status&quot;: &quot;configured&quot;,
+    &quot;command&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;azd&quot;,
+        &quot;env&quot;,
+        &quot;set&quot;,
+        &quot;MAZE_TOOL_MCP_ENDPOINT&quot;,
+        &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1&quot;
+      ]
+    }
+  },
+  &quot;hosted_agent_deployments&quot;: {
+    &quot;maze-analyst-agent&quot;: {
+      &quot;status&quot;: &quot;deployed&quot;,
+      &quot;deploy&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;e) [5s]\n  maze-analyst-agent: Deploying (Waiting for agent to become active) [6s]\n  maze-analyst-agent: Deploying (Agent version created; waiting for activation) [6s]\n  maze-analyst-agent: Deploying (Polling agent status (1/30)) [16s]\n  maze-analyst-agent: Deploying (Polling agent status (2/30)) [27s]\n  maze-analyst-agent: Deploying (Polling agent status (3/30)) [37s]\n  maze-analyst-agent: Deploying (Polling agent status (4/30)) [47s]\n  maze-analyst-agent: Deploying (Polling agent status (5/30)) [57s]\n  maze-analyst-agent: Deploying (Polling agent status (6/30)) [1m7s]\n  maze-analyst-agent: Deploying (Registering agent environment variables) [1m8s]\n  maze-analyst-agent: Done [1m8s]\n- Agent playground (portal): https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-analyst-agent/build?version=3 \n- Agent endpoint (responses): https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-analyst-agent/endpoint/protocols/openai/responses?api-version=v1 \n  \nNext:\n  azd ai agent show maze-analyst-agent\n  verify it&#x27;s running\n\n  see README.md\n  find the sample-specific payload\n\n  azd ai agent invoke maze-analyst-agent &#x27;&lt;payload&gt;&#x27;\n  test with the sample-specific payload\n\n\nSUCCESS: Your application was deployed to Azure in 1 minute 8 seconds.\nYou can view the resources created under the resource group rg-maze-foundry-lab in Azure Portal:\nhttps://portal.azure.com/#@/resource/subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/overview&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;azd&quot;,
+          &quot;deploy&quot;,
+          &quot;maze-analyst-agent&quot;,
+          &quot;--no-prompt&quot;,
+          &quot;--timeout&quot;,
+          &quot;1200&quot;
+        ]
+      },
+      &quot;show&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;tocol_versions\&quot;: [],\n    \&quot;cpu\&quot;: \&quot;0.5\&quot;,\n    \&quot;environment_variables\&quot;: {\n      \&quot;AZURE_AI_MODEL_DEPLOYMENT_NAME\&quot;: \&quot;gpt41mini-maze\&quot;,\n      \&quot;FOUNDRY_MODEL_DEPLOYMENT\&quot;: \&quot;gpt41mini-maze\&quot;,\n      \&quot;FOUNDRY_PROJECT_ENDPOINT\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab\&quot;,\n      \&quot;MAZE_HOSTED_ROLE\&quot;: \&quot;analyst\&quot;,\n      \&quot;MAZE_PROVIDER\&quot;: \&quot;foundry\&quot;,\n      \&quot;MAZE_TOOL_MCP_ENDPOINT\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1\&quot;\n    },\n    \&quot;kind\&quot;: \&quot;hosted\&quot;,\n    \&quot;memory\&quot;: \&quot;1Gi\&quot;,\n    \&quot;protocol_versions\&quot;: [\n      {\n        \&quot;protocol\&quot;: \&quot;responses\&quot;,\n        \&quot;version\&quot;: \&quot;2.0.0\&quot;\n      }\n    ]\n  },\n  \&quot;status\&quot;: \&quot;active\&quot;,\n  \&quot;instance_identity\&quot;: {\n    \&quot;principal_id\&quot;: \&quot;8cb4040e-e596-47df-ba7d-b1790ebcc407\&quot;,\n    \&quot;client_id\&quot;: \&quot;8cb4040e-e596-47df-ba7d-b1790ebcc407\&quot;\n  },\n  \&quot;blueprint\&quot;: {\n    \&quot;principal_id\&quot;: \&quot;7d425379-328d-4b83-8b48-ef38ee8f08a2\&quot;,\n    \&quot;client_id\&quot;: \&quot;f71a953b-c224-421e-940b-cfe7a0d79816\&quot;\n  },\n  \&quot;blueprint_reference\&quot;: {\n    \&quot;type\&quot;: \&quot;ManagedAgentIdentityBlueprint\&quot;,\n    \&quot;blueprint_id\&quot;: \&quot;maze-analyst-agent-1f5e2\&quot;\n  },\n  \&quot;agent_guid\&quot;: \&quot;1f5e2aab-496c-4f1d-8ce2-3013376d4613\&quot;,\n  \&quot;playground_url\&quot;: \&quot;https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-analyst-agent/build?version=3\&quot;,\n  \&quot;agent_endpoints\&quot;: {\n    \&quot;responses\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-analyst-agent/endpoint/protocols/openai/responses?api-version=v1\&quot;\n  }\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;azd&quot;,
+          &quot;ai&quot;,
+          &quot;agent&quot;,
+          &quot;show&quot;,
+          &quot;maze-analyst-agent&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      },
+      &quot;active_version&quot;: &quot;3&quot;,
+      &quot;endpoint_present&quot;: false
+    },
+    &quot;maze-worker-agent-a&quot;: {
+      &quot;status&quot;: &quot;deployed&quot;,
+      &quot;deploy&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;-worker-agent-a: Deploying (Waiting for agent to become active) [4s]\n  maze-worker-agent-a: Deploying (Agent version created; waiting for activation) [4s]\n  maze-worker-agent-a: Deploying (Polling agent status (1/30)) [14s]\n  maze-worker-agent-a: Deploying (Polling agent status (2/30)) [24s]\n  maze-worker-agent-a: Deploying (Polling agent status (3/30)) [35s]\n  maze-worker-agent-a: Deploying (Polling agent status (4/30)) [45s]\n  maze-worker-agent-a: Deploying (Polling agent status (5/30)) [55s]\n  maze-worker-agent-a: Deploying (Registering agent environment variables) [1m6s]\n  maze-worker-agent-a: Deploying (Polling agent status (6/30)) [1m6s]\n  maze-worker-agent-a: Done [1m6s]\n- Agent playground (portal): https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-worker-agent-a/build?version=3 \n- Agent endpoint (responses): https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-worker-agent-a/endpoint/protocols/openai/responses?api-version=v1 \n  \nNext:\n  azd ai agent show maze-worker-agent-a\n  verify it&#x27;s running\n\n  see README.md\n  find the sample-specific payload\n\n  azd ai agent invoke maze-worker-agent-a &#x27;&lt;payload&gt;&#x27;\n  test with the sample-specific payload\n\n\nSUCCESS: Your application was deployed to Azure in 1 minute 6 seconds.\nYou can view the resources created under the resource group rg-maze-foundry-lab in Azure Portal:\nhttps://portal.azure.com/#@/resource/subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/overview&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;azd&quot;,
+          &quot;deploy&quot;,
+          &quot;maze-worker-agent-a&quot;,
+          &quot;--no-prompt&quot;,
+          &quot;--timeout&quot;,
+          &quot;1200&quot;
+        ]
+      },
+      &quot;show&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;l_versions\&quot;: [],\n    \&quot;cpu\&quot;: \&quot;0.5\&quot;,\n    \&quot;environment_variables\&quot;: {\n      \&quot;AZURE_AI_MODEL_DEPLOYMENT_NAME\&quot;: \&quot;gpt41mini-maze\&quot;,\n      \&quot;FOUNDRY_MODEL_DEPLOYMENT\&quot;: \&quot;gpt41mini-maze\&quot;,\n      \&quot;FOUNDRY_PROJECT_ENDPOINT\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab\&quot;,\n      \&quot;MAZE_HOSTED_ROLE\&quot;: \&quot;worker_a\&quot;,\n      \&quot;MAZE_PROVIDER\&quot;: \&quot;foundry\&quot;,\n      \&quot;MAZE_TOOL_MCP_ENDPOINT\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1\&quot;\n    },\n    \&quot;kind\&quot;: \&quot;hosted\&quot;,\n    \&quot;memory\&quot;: \&quot;1Gi\&quot;,\n    \&quot;protocol_versions\&quot;: [\n      {\n        \&quot;protocol\&quot;: \&quot;responses\&quot;,\n        \&quot;version\&quot;: \&quot;2.0.0\&quot;\n      }\n    ]\n  },\n  \&quot;status\&quot;: \&quot;active\&quot;,\n  \&quot;instance_identity\&quot;: {\n    \&quot;principal_id\&quot;: \&quot;ed29a00e-be52-4e05-b7e4-3ab575291908\&quot;,\n    \&quot;client_id\&quot;: \&quot;ed29a00e-be52-4e05-b7e4-3ab575291908\&quot;\n  },\n  \&quot;blueprint\&quot;: {\n    \&quot;principal_id\&quot;: \&quot;f15cc5cf-a6c3-4f74-a775-c397aadd6025\&quot;,\n    \&quot;client_id\&quot;: \&quot;77c49ecd-0cdf-40e8-8434-b0eee68c2a70\&quot;\n  },\n  \&quot;blueprint_reference\&quot;: {\n    \&quot;type\&quot;: \&quot;ManagedAgentIdentityBlueprint\&quot;,\n    \&quot;blueprint_id\&quot;: \&quot;maze-worker-agent-a-d2df6\&quot;\n  },\n  \&quot;agent_guid\&quot;: \&quot;d2df6d49-fe15-48fa-8ecb-66c86b601e70\&quot;,\n  \&quot;playground_url\&quot;: \&quot;https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-worker-agent-a/build?version=3\&quot;,\n  \&quot;agent_endpoints\&quot;: {\n    \&quot;responses\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-worker-agent-a/endpoint/protocols/openai/responses?api-version=v1\&quot;\n  }\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;azd&quot;,
+          &quot;ai&quot;,
+          &quot;agent&quot;,
+          &quot;show&quot;,
+          &quot;maze-worker-agent-a&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      },
+      &quot;active_version&quot;: &quot;3&quot;,
+      &quot;endpoint_present&quot;: false
+    },
+    &quot;maze-worker-agent-b&quot;: {
+      &quot;status&quot;: &quot;deployed&quot;,
+      &quot;deploy&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;-worker-agent-b: Deploying (Waiting for agent to become active) [5s]\n  maze-worker-agent-b: Deploying (Agent version created; waiting for activation) [5s]\n  maze-worker-agent-b: Deploying (Polling agent status (1/30)) [15s]\n  maze-worker-agent-b: Deploying (Polling agent status (2/30)) [26s]\n  maze-worker-agent-b: Deploying (Polling agent status (3/30)) [36s]\n  maze-worker-agent-b: Deploying (Polling agent status (4/30)) [46s]\n  maze-worker-agent-b: Deploying (Polling agent status (5/30)) [56s]\n  maze-worker-agent-b: Deploying (Polling agent status (6/30)) [1m7s]\n  maze-worker-agent-b: Deploying (Registering agent environment variables) [1m7s]\n  maze-worker-agent-b: Done [1m7s]\n- Agent playground (portal): https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-worker-agent-b/build?version=3 \n- Agent endpoint (responses): https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-worker-agent-b/endpoint/protocols/openai/responses?api-version=v1 \n  \nNext:\n  azd ai agent show maze-worker-agent-b\n  verify it&#x27;s running\n\n  see README.md\n  find the sample-specific payload\n\n  azd ai agent invoke maze-worker-agent-b &#x27;&lt;payload&gt;&#x27;\n  test with the sample-specific payload\n\n\nSUCCESS: Your application was deployed to Azure in 1 minute 7 seconds.\nYou can view the resources created under the resource group rg-maze-foundry-lab in Azure Portal:\nhttps://portal.azure.com/#@/resource/subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/overview&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;azd&quot;,
+          &quot;deploy&quot;,
+          &quot;maze-worker-agent-b&quot;,
+          &quot;--no-prompt&quot;,
+          &quot;--timeout&quot;,
+          &quot;1200&quot;
+        ]
+      },
+      &quot;show&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;l_versions\&quot;: [],\n    \&quot;cpu\&quot;: \&quot;0.5\&quot;,\n    \&quot;environment_variables\&quot;: {\n      \&quot;AZURE_AI_MODEL_DEPLOYMENT_NAME\&quot;: \&quot;gpt41mini-maze\&quot;,\n      \&quot;FOUNDRY_MODEL_DEPLOYMENT\&quot;: \&quot;gpt41mini-maze\&quot;,\n      \&quot;FOUNDRY_PROJECT_ENDPOINT\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab\&quot;,\n      \&quot;MAZE_HOSTED_ROLE\&quot;: \&quot;worker_b\&quot;,\n      \&quot;MAZE_PROVIDER\&quot;: \&quot;foundry\&quot;,\n      \&quot;MAZE_TOOL_MCP_ENDPOINT\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/toolboxes/maze-toolbox/versions/1/mcp?api-version=v1\&quot;\n    },\n    \&quot;kind\&quot;: \&quot;hosted\&quot;,\n    \&quot;memory\&quot;: \&quot;1Gi\&quot;,\n    \&quot;protocol_versions\&quot;: [\n      {\n        \&quot;protocol\&quot;: \&quot;responses\&quot;,\n        \&quot;version\&quot;: \&quot;2.0.0\&quot;\n      }\n    ]\n  },\n  \&quot;status\&quot;: \&quot;active\&quot;,\n  \&quot;instance_identity\&quot;: {\n    \&quot;principal_id\&quot;: \&quot;d8c57f38-d195-4ec1-b06c-8365f6a63213\&quot;,\n    \&quot;client_id\&quot;: \&quot;d8c57f38-d195-4ec1-b06c-8365f6a63213\&quot;\n  },\n  \&quot;blueprint\&quot;: {\n    \&quot;principal_id\&quot;: \&quot;05e49d17-f444-4fc2-94cd-64d7001ef46a\&quot;,\n    \&quot;client_id\&quot;: \&quot;07f802b0-2e4c-4591-9af1-9eb509775ffe\&quot;\n  },\n  \&quot;blueprint_reference\&quot;: {\n    \&quot;type\&quot;: \&quot;ManagedAgentIdentityBlueprint\&quot;,\n    \&quot;blueprint_id\&quot;: \&quot;maze-worker-agent-b-7f654\&quot;\n  },\n  \&quot;agent_guid\&quot;: \&quot;7f654f13-00ab-44bf-9ab7-96f10bda7709\&quot;,\n  \&quot;playground_url\&quot;: \&quot;https://ai.azure.com/nextgen/r/Ds2lz4wgSBiFbgrKyc6aqQ,rg-maze-foundry-lab,,maze-foundry-prav-ada483,maze-migration-lab/build/agents/maze-worker-agent-b/build?version=3\&quot;,\n  \&quot;agent_endpoints\&quot;: {\n    \&quot;responses\&quot;: \&quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab/agents/maze-worker-agent-b/endpoint/protocols/openai/responses?api-version=v1\&quot;\n  }\n}&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;azd&quot;,
+          &quot;ai&quot;,
+          &quot;agent&quot;,
+          &quot;show&quot;,
+          &quot;maze-worker-agent-b&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      },
+      &quot;active_version&quot;: &quot;3&quot;,
+      &quot;endpoint_present&quot;: false
+    }
+  },
+  &quot;summary&quot;: {
+    &quot;independent_hosted_agents_planned&quot;: 3,
+    &quot;independent_hosted_agents_deployed&quot;: 3,
+    &quot;new_storage_resources&quot;: 0,
+    &quot;new_model_deployments&quot;: 0,
+    &quot;new_toolboxes&quot;: 0,
+    &quot;next_phase&quot;: &quot;Move Team Memory from request-scoped JSON into low-cost Azure durable storage after independent role-agent boundaries are validated.&quot;
+  }
+}</pre></details>
+  </section>
+</main>
+</body>
+</html>

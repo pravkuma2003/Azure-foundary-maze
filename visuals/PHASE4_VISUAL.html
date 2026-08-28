@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 4</title>
+  <style>
+    :root { --bg:#f7f8fa; --panel:#fff; --text:#17202a; --muted:#5f6b7a; --line:#d9dee7; --blue:#285da8; --green:#1f6f5b; --shadow:0 10px 28px rgba(28,36,48,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--text); background:var(--bg); line-height:1.5; }
+    main { width:min(1180px, calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:20px; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,42px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    p { margin:0; color:var(--muted); }
+    .panel,.summary { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:16px; }
+    .summary strong { display:block; font-size:30px; text-transform:capitalize; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .metric { border:1px solid var(--line); border-radius:8px; padding:14px; background:#fff; }
+    .metric span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:6px; font-size:26px; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#111827; background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    pre { overflow:auto; max-height:420px; padding:12px; background:#111827; color:#e5e7eb; border-radius:8px; font-size:12px; }
+    .stack { display:grid; gap:14px; }
+    @media (max-width:900px) { header,.metrics { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Phase 4 - Foundry Project and Model Deployment</h1>
+        <p>Create the smallest usable Foundry base: one resource group, one Foundry resource, one project, one model deployment.</p>
+      </div>
+      <aside class="summary">
+        <span>Status</span>
+        <strong>complete</strong>
+        <p>Inference calls made: 0.</p>
+      </aside>
+    </header>
+    <div class="stack">
+      <section class="panel">
+        <h2>Phase Metrics</h2>
+        <div class="metrics">
+          <div class="metric"><span>New Resources</span><strong>0</strong></div>
+          <div class="metric"><span>Reused/Created</span><strong>4</strong></div>
+          <div class="metric"><span>Hosted Agents</span><strong>0</strong></div>
+          <div class="metric"><span>LLM Calls</span><strong>0</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Resource State</h2>
+        <table>
+          <thead><tr><th>Resource</th><th>Name</th><th>Status</th><th>State</th><th>Detail</th></tr></thead>
+          <tbody><tr><td>Resource Group</td><td>rg-maze-foundry-lab</td><td>reused</td><td>Succeeded</td><td></td></tr><tr><td>Foundry Resource</td><td>maze-foundry-prav-ada483</td><td>reused</td><td>Succeeded</td><td>https://maze-foundry-prav-ada483.cognitiveservices.azure.com/</td></tr><tr><td>Project</td><td>maze-migration-lab</td><td>reused</td><td>Succeeded</td><td>https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab</td></tr><tr><td>Model Deployment</td><td>gpt41mini-maze</td><td>reused</td><td>Succeeded</td><td>gpt-4.1-mini</td></tr></tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <h2>Cost Controls</h2>
+        <table>
+          <thead><tr><th>Control</th><th>Value</th></tr></thead>
+          <tbody><tr><td>Resource Group</td><td>single learning resource group</td></tr><tr><td>Foundry Resource</td><td>single AIServices S0 resource</td></tr><tr><td>Project</td><td>single Foundry project</td></tr><tr><td>Model Deployment</td><td>gpt-4.1-mini with GlobalStandard capacity 50</td></tr><tr><td>Fixed Hosted Agent Cost</td><td>none in Phase 4; hosted agents start later</td></tr><tr><td>Expected Model Cost</td><td>pay-per-token only during test calls; Phase 4 does not run inference</td></tr><tr><td>Cleanup Command</td><td>az group delete --name rg-maze-foundry-lab --yes --no-wait</td></tr></tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <h2>Commands Used</h2>
+        <table>
+          <thead><tr><th>Step</th><th>Command Shape</th></tr></thead>
+          <tbody><tr><td>Resource Group</td><td><code>az group create --name rg-maze-foundry-lab --location eastus</code></td></tr><tr><td>Foundry Resource</td><td><code>az rest PUT Microsoft.CognitiveServices/accounts with kind AIServices, S0, project management, and managed identity</code></td></tr><tr><td>Project</td><td><code>az rest PUT Microsoft.CognitiveServices/accounts/projects</code></td></tr><tr><td>Model Deployment</td><td><code>az cognitiveservices account deployment create --deployment-name gpt41mini-maze --model-name gpt-4.1-mini --model-version 2025-04-14 --model-format OpenAI --sku-name GlobalStandard --sku-capacity 50</code></td></tr><tr><td>Cleanup</td><td><code>az group delete --name rg-maze-foundry-lab --yes --no-wait</code></td></tr></tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <h2>Next Phase</h2>
+        <p>Add a Foundry provider adapter while keeping the local Pydantic AI agent behavior unchanged.</p>
+      </section>
+      <section class="panel">
+        <h2>Report JSON</h2>
+        <details><summary>Open generated report</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 4,
+  &quot;phase_name&quot;: &quot;Foundry Project and Model Deployment&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;mode&quot;: &quot;apply&quot;,
+  &quot;subscription&quot;: {
+    &quot;name&quot;: &quot;Visual Studio Enterprise Subscription&quot;,
+    &quot;subscription_id_masked&quot;: &quot;0ecd...9aa9&quot;,
+    &quot;tenant_id_masked&quot;: &quot;f218...d62e&quot;
+  },
+  &quot;cost_posture&quot;: {
+    &quot;resource_group&quot;: &quot;single learning resource group&quot;,
+    &quot;foundry_resource&quot;: &quot;single AIServices S0 resource&quot;,
+    &quot;project&quot;: &quot;single Foundry project&quot;,
+    &quot;model_deployment&quot;: &quot;gpt-4.1-mini with GlobalStandard capacity 50&quot;,
+    &quot;fixed_hosted_agent_cost&quot;: &quot;none in Phase 4; hosted agents start later&quot;,
+    &quot;expected_model_cost&quot;: &quot;pay-per-token only during test calls; Phase 4 does not run inference&quot;,
+    &quot;cleanup_command&quot;: &quot;az group delete --name rg-maze-foundry-lab --yes --no-wait&quot;
+  },
+  &quot;resources&quot;: {
+    &quot;resource_group&quot;: {
+      &quot;name&quot;: &quot;rg-maze-foundry-lab&quot;,
+      &quot;status&quot;: &quot;reused&quot;,
+      &quot;state&quot;: &quot;Succeeded&quot;
+    },
+    &quot;foundry_resource&quot;: {
+      &quot;name&quot;: &quot;maze-foundry-prav-ada483&quot;,
+      &quot;status&quot;: &quot;reused&quot;,
+      &quot;state&quot;: &quot;Succeeded&quot;,
+      &quot;endpoint&quot;: &quot;https://maze-foundry-prav-ada483.cognitiveservices.azure.com/&quot;
+    },
+    &quot;project&quot;: {
+      &quot;name&quot;: &quot;maze-migration-lab&quot;,
+      &quot;status&quot;: &quot;reused&quot;,
+      &quot;state&quot;: &quot;Succeeded&quot;,
+      &quot;endpoint&quot;: &quot;https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab&quot;
+    },
+    &quot;model_deployment&quot;: {
+      &quot;name&quot;: &quot;gpt41mini-maze&quot;,
+      &quot;status&quot;: &quot;reused&quot;,
+      &quot;state&quot;: &quot;Succeeded&quot;,
+      &quot;model&quot;: &quot;gpt-4.1-mini&quot;,
+      &quot;model_version&quot;: &quot;2025-04-14&quot;,
+      &quot;sku&quot;: &quot;GlobalStandard&quot;,
+      &quot;capacity&quot;: 50
+    }
+  },
+  &quot;summary&quot;: {
+    &quot;azure_resources_created_or_reused&quot;: 4,
+    &quot;new_resources_created&quot;: 0,
+    &quot;failed_resources&quot;: 0,
+    &quot;inference_calls_made&quot;: 0,
+    &quot;hosted_agents_created&quot;: 0,
+    &quot;next_phase&quot;: &quot;Add a Foundry provider adapter while keeping the local Pydantic AI agent behavior unchanged.&quot;
+  },
+  &quot;commands&quot;: {
+    &quot;resource_group&quot;: &quot;az group create --name rg-maze-foundry-lab --location eastus&quot;,
+    &quot;foundry_resource&quot;: &quot;az rest PUT Microsoft.CognitiveServices/accounts with kind AIServices, S0, project management, and managed identity&quot;,
+    &quot;project&quot;: &quot;az rest PUT Microsoft.CognitiveServices/accounts/projects&quot;,
+    &quot;model_deployment&quot;: &quot;az cognitiveservices account deployment create --deployment-name gpt41mini-maze --model-name gpt-4.1-mini --model-version 2025-04-14 --model-format OpenAI --sku-name GlobalStandard --sku-capacity 50&quot;,
+    &quot;cleanup&quot;: &quot;az group delete --name rg-maze-foundry-lab --yes --no-wait&quot;
+  }
+}</pre></details>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

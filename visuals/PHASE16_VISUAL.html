@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 16</title>
+  <style>
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f7f8fa; color:#17202a; line-height:1.5; }
+    main { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:18px; border-bottom:1px solid #d9dee7; padding-bottom:20px; margin-bottom:20px; }
+    h1 { margin:0 0 8px; font-size:clamp(30px,4vw,44px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    p { margin:0; color:#5f6b7a; }
+    .panel,.metric,.node { background:#fff; border:1px solid #d9dee7; border-radius:8px; box-shadow:0 10px 28px rgba(28,36,48,.08); padding:16px; }
+    .metric strong { display:block; font-size:28px; }
+    .diagram,.mazes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; align-items:start; }
+    .mazes { grid-template-columns:repeat(2,minmax(0,1fr)); margin-top:14px; }
+    .node strong { display:block; font-size:17px; }
+    .node span { color:#5f6b7a; font-weight:800; font-size:12px; text-transform:uppercase; }
+    .agent { border-left:5px solid #285da8; }
+    .memory { border-left:5px solid #9a6500; }
+    .tool { border-left:5px solid #1f6f5b; }
+    code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+    pre { white-space:pre-wrap; background:#111827; color:#e5e7eb; border-radius:8px; padding:14px; overflow:auto; }
+    @media (max-width:900px) { header,.diagram,.mazes { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Phase 16 - Dynamic Mission Design</h1><p>Make the Analyst use LLM reasoning for per-run mission design while Workers solve Analyst-generated mazes from Team Memory.</p></div>
+    <aside class="metric"><span>Status</span><strong>complete</strong><p>Mode: plan</p></aside>
+  </header>
+  <section class="diagram">
+    <article class="node agent"><span>Analyst</span><strong>Generate mission</strong><p>Creates fresh wall layouts and assigns mazes without route steps or solvability claims.</p></article>
+    <article class="node memory"><span>Team Memory</span><strong>Persist layouts</strong><p>Stores maze rows, profiles, assignments, and worker results by run id.</p></article>
+    <article class="node tool"><span>Maze Tool</span><strong>Validate dynamic rows</strong><p>Inspect and move calls validate against rows supplied with the request.</p></article>
+  </section>
+  <section class="mazes">
+    <article class="panel"><h2>Live Maze A</h2><p><code>planned</code></p></article>
+    <article class="panel"><h2>Live Maze B</h2><p><code>planned</code></p></article>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Validation</h2>
+    <p>LLM calls: None. Worker A outcome: None. Worker B outcome: None. Hidden path rescue: None.</p>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Raw Report</h2>
+    <details><summary>Open JSON</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 16,
+  &quot;phase_name&quot;: &quot;Dynamic Mission Design&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;mode&quot;: &quot;plan&quot;,
+  &quot;learning_objective&quot;: &quot;Make the Analyst use LLM reasoning for per-run mission design while Workers solve Analyst-generated mazes from Team Memory.&quot;,
+  &quot;architecture&quot;: {
+    &quot;before&quot;: &quot;Analyst assigned fixed Maze A and Maze B layouts that Workers repeatedly solved.&quot;,
+    &quot;after&quot;: &quot;Analyst creates fresh maze layouts, stores rows in durable Team Memory, and assigns each Worker without route steps or solvability claims.&quot;,
+    &quot;tool_contract&quot;: &quot;Maze Tool accepts optional rows so validation uses the Analyst-generated layout.&quot;,
+    &quot;orchestrator&quot;: &quot;WebUI coordinator remains deterministic and only dispatches role-agent calls.&quot;
+  },
+  &quot;packages&quot;: {
+    &quot;tool&quot;: {
+      &quot;path&quot;: &quot;runs/phase16_maze_tool_dynamic.zip&quot;,
+      &quot;bytes&quot;: 5317
+    },
+    &quot;webui&quot;: {
+      &quot;path&quot;: &quot;runs/phase16_webui_dynamic_mission.zip&quot;,
+      &quot;bytes&quot;: 18179
+    }
+  },
+  &quot;compile&quot;: {
+    &quot;tool&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;python3&quot;,
+        &quot;-m&quot;,
+        &quot;py_compile&quot;,
+        &quot;tools/phase10-maze-tool-function/maze_common.py&quot;
+      ]
+    },
+    &quot;hosted&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;python3&quot;,
+        &quot;-m&quot;,
+        &quot;py_compile&quot;,
+        &quot;hosted/phase13-split-role-agents/main.py&quot;,
+        &quot;hosted/phase13-split-role-agents/src/maze_tool_boundary.py&quot;
+      ]
+    },
+    &quot;webui&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;python3&quot;,
+        &quot;-m&quot;,
+        &quot;py_compile&quot;,
+        &quot;webui/phase8-azure-webui/function_app.py&quot;
+      ]
+    }
+  },
+  &quot;deploy_tool&quot;: {
+    &quot;attempted&quot;: false,
+    &quot;status&quot;: &quot;planned&quot;
+  },
+  &quot;openapi_validation&quot;: {
+    &quot;status_code&quot;: 0,
+    &quot;url&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/openapi.json&quot;,
+    &quot;error&quot;: &quot;&lt;urlopen error [Errno 8] nodename nor servname provided, or not known&gt;&quot;
+  },
+  &quot;toolbox&quot;: {
+    &quot;attempted&quot;: false,
+    &quot;status&quot;: &quot;blocked_by_openapi&quot;
+  },
+  &quot;agent_env&quot;: {
+    &quot;attempted&quot;: false,
+    &quot;status&quot;: &quot;planned&quot;,
+    &quot;error&quot;: &quot;MCP endpoint unavailable&quot;
+  },
+  &quot;role_deployments&quot;: {
+    &quot;maze-analyst-agent&quot;: {
+      &quot;attempted&quot;: false,
+      &quot;status&quot;: &quot;planned&quot;
+    },
+    &quot;maze-worker-agent-a&quot;: {
+      &quot;attempted&quot;: false,
+      &quot;status&quot;: &quot;planned&quot;
+    },
+    &quot;maze-worker-agent-b&quot;: {
+      &quot;attempted&quot;: false,
+      &quot;status&quot;: &quot;planned&quot;
+    }
+  },
+  &quot;deploy_webui&quot;: {
+    &quot;attempted&quot;: false,
+    &quot;status&quot;: &quot;planned&quot;
+  },
+  &quot;webui_restart&quot;: {
+    &quot;returncode&quot;: 0,
+    &quot;stdout_tail&quot;: &quot;&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;command&quot;: []
+  },
+  &quot;live_validation&quot;: {
+    &quot;attempted&quot;: false,
+    &quot;status&quot;: &quot;planned&quot;
+  },
+  &quot;summary&quot;: {
+    &quot;dynamic_maze_generation&quot;: &quot;planned&quot;,
+    &quot;worker_a_goal_reached&quot;: &quot;planned&quot;,
+    &quot;worker_b_goal_reached&quot;: &quot;planned&quot;,
+    &quot;worker_a_outcome&quot;: &quot;planned&quot;,
+    &quot;worker_b_outcome&quot;: &quot;planned&quot;,
+    &quot;worker_side_path_rescue&quot;: &quot;planned&quot;,
+    &quot;llm_calls&quot;: &quot;planned&quot;,
+    &quot;new_compute_resources&quot;: 0,
+    &quot;new_storage_accounts&quot;: 0,
+    &quot;new_toolbox&quot;: &quot;maze-toolbox-dynamic&quot;,
+    &quot;next_phase&quot;: &quot;Agent Quality Telemetry can now monitor dynamic task quality instead of a repeated fixed maze.&quot;
+  }
+}</pre></details>
+  </section>
+</main>
+</body>
+</html>

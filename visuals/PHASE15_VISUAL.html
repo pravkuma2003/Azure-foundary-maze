@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 15</title>
+  <style>
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f7f8fa; color:#17202a; line-height:1.5; }
+    main { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:32px 0 48px; }
+    header { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:18px; border-bottom:1px solid #d9dee7; padding-bottom:20px; margin-bottom:20px; }
+    h1 { margin:0 0 8px; font-size:clamp(30px,4vw,44px); line-height:1.08; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    p { margin:0; color:#5f6b7a; }
+    .panel,.metric,.node { background:#fff; border:1px solid #d9dee7; border-radius:8px; box-shadow:0 10px 28px rgba(28,36,48,.08); padding:16px; }
+    .metric strong { display:block; font-size:28px; }
+    .diagram { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; align-items:start; }
+    .node strong { display:block; font-size:17px; }
+    .node span { color:#5f6b7a; font-weight:800; font-size:12px; text-transform:uppercase; }
+    .keep { border-left:5px solid #1f6f5b; }
+    .merge { border-left:5px solid #285da8; }
+    .remove { border-left:5px solid #9a6500; }
+    table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #d9dee7; border-radius:8px; overflow:hidden; margin-top:10px; }
+    th,td { padding:10px; border-bottom:1px solid #e6eaf1; text-align:left; vertical-align:top; }
+    th { background:#eef2f7; }
+    pre { white-space:pre-wrap; background:#111827; color:#e5e7eb; border-radius:8px; padding:14px; overflow:auto; }
+    @media (max-width:900px) { header,.diagram { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Phase 15 - Monitoring Consolidation</h1>
+      <p>Consolidate duplicate Azure monitoring resources while leaving Function App storage unchanged.</p>
+    </div>
+    <aside class="metric"><span>Status</span><strong>complete</strong><p>Mode: apply</p></aside>
+  </header>
+  <section class="diagram">
+    <article class="node keep"><span>Kept</span><strong>WebUI App Insights</strong><p>Shared telemetry target for WebUI and Maze Tool.</p></article>
+    <article class="node merge"><span>Repointed</span><strong>Maze Tool Function</strong><p>Monitoring settings now use the shared component.</p></article>
+    <article class="node remove"><span>Removed</span><strong>Duplicate Tool Monitoring</strong><p>Old tool App Insights, alert rule, and managed workspace group removed after validation.</p></article>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Remaining Monitoring Resources</h2>
+    <table><thead><tr><th>Name</th><th>Type</th><th>Resource Group</th></tr></thead><tbody><tr><td>managed-maze-webui-func-prav-ada483-ws</td><td>microsoft.operationalinsights/workspaces</td><td>ai_maze-webui-func-prav-ada483_4c33593e-b52d-4a9c-8d8c-c4578cb8d4cc_managed</td></tr><tr><td>maze-webui-func-prav-ada483</td><td>Microsoft.Insights/components</td><td>rg-maze-foundry-lab</td></tr><tr><td>Failure Anomalies - maze-webui-func-prav-ada483</td><td>microsoft.alertsmanagement/smartDetectorAlertRules</td><td>rg-maze-foundry-lab</td></tr></tbody></table>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2>Raw Report</h2>
+    <details><summary>Open JSON</summary><pre>{
+  &quot;course&quot;: &quot;Azure Foundry Maze Migration From Scratch&quot;,
+  &quot;phase&quot;: 15,
+  &quot;phase_name&quot;: &quot;Monitoring Consolidation&quot;,
+  &quot;status&quot;: &quot;complete&quot;,
+  &quot;mode&quot;: &quot;apply&quot;,
+  &quot;learning_objective&quot;: &quot;Consolidate duplicate Azure monitoring resources while leaving Function App storage unchanged.&quot;,
+  &quot;architecture&quot;: {
+    &quot;before&quot;: &quot;Each Function App had its own Application Insights component and managed Log Analytics workspace.&quot;,
+    &quot;after&quot;: &quot;Both Function Apps send telemetry to the WebUI Application Insights component and its managed workspace.&quot;,
+    &quot;storage_scope&quot;: &quot;No Function App storage account was changed in this phase.&quot;,
+    &quot;app_service_plan_scope&quot;: &quot;The existing Y1 Consumption plan remains shared by both Function Apps.&quot;
+  },
+  &quot;before_monitoring_resources&quot;: {
+    &quot;command&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;kind\&quot;: null,\n    \&quot;location\&quot;: \&quot;eastus2\&quot;,\n    \&quot;name\&quot;: \&quot;managed-maze-webui-func-prav-ada483-ws\&quot;,\n    \&quot;resourceGroup\&quot;: \&quot;ai_maze-webui-func-prav-ada483_4c33593e-b52d-4a9c-8d8c-c4578cb8d4cc_managed\&quot;,\n    \&quot;type\&quot;: \&quot;microsoft.operationalinsights/workspaces\&quot;\n  },\n  {\n    \&quot;kind\&quot;: \&quot;web\&quot;,\n    \&quot;location\&quot;: \&quot;eastus2\&quot;,\n    \&quot;name\&quot;: \&quot;maze-webui-func-prav-ada483\&quot;,\n    \&quot;resourceGroup\&quot;: \&quot;rg-maze-foundry-lab\&quot;,\n    \&quot;type\&quot;: \&quot;Microsoft.Insights/components\&quot;\n  },\n  {\n    \&quot;kind\&quot;: null,\n    \&quot;location\&quot;: \&quot;global\&quot;,\n    \&quot;name\&quot;: \&quot;Failure Anomalies - maze-webui-func-prav-ada483\&quot;,\n    \&quot;resourceGroup\&quot;: \&quot;rg-maze-foundry-lab\&quot;,\n    \&quot;type\&quot;: \&quot;microsoft.alertsmanagement/smartDetectorAlertRules\&quot;\n  }\n]&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;resource&quot;,
+        &quot;list&quot;,
+        &quot;--query&quot;,
+        &quot;[?contains(name, &#x27;maze&#x27;) &amp;&amp; (type==&#x27;Microsoft.Insights/components&#x27; || type==&#x27;microsoft.operationalinsights/workspaces&#x27; || type==&#x27;microsoft.alertsmanagement/smartDetectorAlertRules&#x27;)].{name:name,type:type,resourceGroup:resourceGroup,location:location,kind:kind}&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    },
+    &quot;resources&quot;: [
+      {
+        &quot;kind&quot;: null,
+        &quot;location&quot;: &quot;eastus2&quot;,
+        &quot;name&quot;: &quot;managed-maze-webui-func-prav-ada483-ws&quot;,
+        &quot;resourceGroup&quot;: &quot;ai_maze-webui-func-prav-ada483_4c33593e-b52d-4a9c-8d8c-c4578cb8d4cc_managed&quot;,
+        &quot;type&quot;: &quot;microsoft.operationalinsights/workspaces&quot;
+      },
+      {
+        &quot;kind&quot;: &quot;web&quot;,
+        &quot;location&quot;: &quot;eastus2&quot;,
+        &quot;name&quot;: &quot;maze-webui-func-prav-ada483&quot;,
+        &quot;resourceGroup&quot;: &quot;rg-maze-foundry-lab&quot;,
+        &quot;type&quot;: &quot;Microsoft.Insights/components&quot;
+      },
+      {
+        &quot;kind&quot;: null,
+        &quot;location&quot;: &quot;global&quot;,
+        &quot;name&quot;: &quot;Failure Anomalies - maze-webui-func-prav-ada483&quot;,
+        &quot;resourceGroup&quot;: &quot;rg-maze-foundry-lab&quot;,
+        &quot;type&quot;: &quot;microsoft.alertsmanagement/smartDetectorAlertRules&quot;
+      }
+    ]
+  },
+  &quot;webui_settings_before&quot;: {
+    &quot;command&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot; \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;python\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;~4\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_AGENT_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;ENABLE_ORYX_BUILD\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;true\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;true\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_RUN_FROM_PACKAGE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_ANALYST_AGENT_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_WORKER_AGENT_A_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;FOUNDRY_WORKER_AGENT_B_ENDPOINT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;TEAM_MEMORY_BACKEND\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;azure-blob\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;TEAM_MEMORY_TABLE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;MazeTeamMemory\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;TEAM_MEMORY_CONTAINER\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;team-memory\&quot;\n  }\n]&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;functionapp&quot;,
+        &quot;config&quot;,
+        &quot;appsettings&quot;,
+        &quot;list&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;maze-webui-func-prav-ada483&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    },
+    &quot;settings&quot;: {
+      &quot;APPINSIGHTS_INSTRUMENTATIONKEY&quot;: {
+        &quot;configured&quot;: true,
+        &quot;length&quot;: 36
+      }
+    }
+  },
+  &quot;tool_settings_before&quot;: {
+    &quot;command&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;python\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;~4\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;false\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_RUN_FROM_PACKAGE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPLICATIONINSIGHTS_CONNECTION_STRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  }\n]&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;functionapp&quot;,
+        &quot;config&quot;,
+        &quot;appsettings&quot;,
+        &quot;list&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;maze-tool-func-prav-ada483&quot;,
+        &quot;--output&quot;,
+        &quot;json&quot;
+      ]
+    },
+    &quot;settings&quot;: {
+      &quot;APPINSIGHTS_INSTRUMENTATIONKEY&quot;: {
+        &quot;configured&quot;: true,
+        &quot;length&quot;: 36
+      },
+      &quot;APPLICATIONINSIGHTS_CONNECTION_STRING&quot;: {
+        &quot;configured&quot;: true,
+        &quot;length&quot;: 240
+      }
+    }
+  },
+  &quot;shared_app_insights_lookup&quot;: {
+    &quot;returncode&quot;: 0,
+    &quot;stdout_tail&quot;: &quot;{\n  \&quot;appId\&quot;: \&quot;4c33593e-b52d-4a9c-8d8c-c4578cb8d4cc\&quot;,\n  \&quot;applicationId\&quot;: \&quot;maze-webui-func-prav-ada483\&quot;,\n  \&quot;applicationType\&quot;: \&quot;web\&quot;,\n  \&quot;connectionString\&quot;: \&quot;InstrumentationKey=[redacted];IngestionEndpoint=[redacted];LiveEndpoint=[redacted];ApplicationId=[redacted]\&quot;,\n  \&quot;creationDate\&quot;: \&quot;2026-08-26T20:22:46.020617+00:00\&quot;,\n  \&quot;disableIpMasking\&quot;: null,\n  \&quot;etag\&quot;: \&quot;\\\&quot;0e01fba3-0000-0200-0000-6a8f721a0000\\\&quot;\&quot;,\n  \&quot;flowType\&quot;: null,\n  \&quot;hockeyAppId\&quot;: null,\n  \&quot;hockeyAppToken\&quot;: null,\n  \&quot;id\&quot;: \&quot;/subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/rg-maze-foundry-lab/providers/microsoft.insights/components/maze-webui-func-prav-ada483\&quot;,\n  \&quot;immediatePurgeDataOn30Days\&quot;: null,\n  \&quot;ingestionMode\&quot;: \&quot;LogAnalytics\&quot;,\n  \&quot;instrumentationKey\&quot;: \&quot;de3fcc66-af6a-4c57-b403-1673a16d70ba\&quot;,\n  \&quot;kind\&quot;: \&quot;web\&quot;,\n  \&quot;laMigrationDate\&quot;: null,\n  \&quot;location\&quot;: \&quot;eastus2\&quot;,\n  \&quot;name\&quot;: \&quot;maze-webui-func-prav-ada483\&quot;,\n  \&quot;namePropertiesName\&quot;: \&quot;maze-webui-func-prav-ada483\&quot;,\n  \&quot;privateLinkScopedResources\&quot;: null,\n  \&quot;provisioningState\&quot;: \&quot;Succeeded\&quot;,\n  \&quot;publicNetworkAccessForIngestion\&quot;: \&quot;Enabled\&quot;,\n  \&quot;publicNetworkAccessForQuery\&quot;: \&quot;Enabled\&quot;,\n  \&quot;requestSource\&quot;: null,\n  \&quot;resourceGroup\&quot;: \&quot;rg-maze-foundry-lab\&quot;,\n  \&quot;retentionInDays\&quot;: 90,\n  \&quot;samplingPercentage\&quot;: null,\n  \&quot;tags\&quot;: {},\n  \&quot;tenantId\&quot;: \&quot;0ecda5cf-8c20-4818-856e-0acac9ce9aa9\&quot;,\n  \&quot;type\&quot;: \&quot;microsoft.insights/components\&quot;,\n  \&quot;workspaceResourceId\&quot;: \&quot;/subscriptions/0ecda5cf-8c20-4818-856e-0acac9ce9aa9/resourceGroups/ai_maze-webui-func-prav-ada483_4c33593e-b52d-4a9c-8d8c-c4578cb8d4cc_managed/providers/Microsoft.OperationalInsights/workspaces/managed-maze-webui-func-prav-ada483-ws\&quot;\n}&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;command&quot;: [
+      &quot;az&quot;,
+      &quot;monitor&quot;,
+      &quot;app-insights&quot;,
+      &quot;component&quot;,
+      &quot;show&quot;,
+      &quot;--app&quot;,
+      &quot;maze-webui-func-prav-ada483&quot;,
+      &quot;--resource-group&quot;,
+      &quot;rg-maze-foundry-lab&quot;,
+      &quot;--output&quot;,
+      &quot;json&quot;
+    ]
+  },
+  &quot;set_tool_monitoring&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status&quot;: &quot;configured&quot;,
+    &quot;command&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_RUN_FROM_PACKAGE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPLICATIONINSIGHTS_CONNECTION_STRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: null\n  }\n]&quot;,
+      &quot;stderr_tail&quot;: &quot;WARNING: App settings have been redacted. Use `az webapp/logicapp/functionapp config appsettings list` to view.&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;functionapp&quot;,
+        &quot;config&quot;,
+        &quot;appsettings&quot;,
+        &quot;set&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;maze-tool-func-prav-ada483&quot;,
+        &quot;--settings&quot;,
+        &quot;APPINSIGHTS_INSTRUMENTATIONKEY=[redacted]&quot;,
+        &quot;APPLICATIONINSIGHTS_CONNECTION_STRING=[redacted]&quot;
+      ]
+    }
+  },
+  &quot;restart_tool_function&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status&quot;: &quot;restarted&quot;,
+    &quot;command&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;functionapp&quot;,
+        &quot;restart&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;maze-tool-func-prav-ada483&quot;
+      ]
+    }
+  },
+  &quot;delete_old_monitoring&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;status&quot;: &quot;deleted&quot;,
+    &quot;component&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;already absent&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;resource&quot;,
+        &quot;show&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;maze-tool-func-prav-ada483&quot;,
+        &quot;--resource-type&quot;,
+        &quot;Microsoft.Insights/components&quot;
+      ]
+    },
+    &quot;alert_rule&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;already absent&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;resource&quot;,
+        &quot;show&quot;,
+        &quot;--resource-group&quot;,
+        &quot;rg-maze-foundry-lab&quot;,
+        &quot;--name&quot;,
+        &quot;Failure Anomalies - maze-tool-func-prav-ada483&quot;,
+        &quot;--resource-type&quot;,
+        &quot;microsoft.alertsmanagement/smartDetectorAlertRules&quot;
+      ]
+    },
+    &quot;managed_workspace_resource_group&quot;: {
+      &quot;returncode&quot;: 0,
+      &quot;stdout_tail&quot;: &quot;already absent&quot;,
+      &quot;stderr_tail&quot;: &quot;&quot;,
+      &quot;command&quot;: [
+        &quot;az&quot;,
+        &quot;group&quot;,
+        &quot;exists&quot;,
+        &quot;--name&quot;,
+        &quot;ai_maze-tool-func-prav-ada483_a4fb8274-f365-4b8c-b42a-badc02c7562a_managed&quot;
+      ]
+    }
+  },
+  &quot;validation&quot;: {
+    &quot;attempted&quot;: true,
+    &quot;webui_health&quot;: {
+      &quot;url&quot;: &quot;https://maze-webui-func-prav-ada483.azurewebsites.net/api/health&quot;,
+      &quot;status_code&quot;: 200,
+      &quot;body&quot;: &quot;{\&quot;status\&quot;: \&quot;ok\&quot;}&quot;
+    },
+    &quot;tool_health&quot;: {
+      &quot;url&quot;: &quot;https://maze-tool-func-prav-ada483.azurewebsites.net/api/maze/health&quot;,
+      &quot;status_code&quot;: 200,
+      &quot;body&quot;: &quot;{\&quot;status\&quot;: \&quot;ok\&quot;, \&quot;service\&quot;: \&quot;maze-tool-function\&quot;}&quot;
+    },
+    &quot;tool_monitoring_settings&quot;: {
+      &quot;command&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_WORKER_RUNTIME\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;python\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;FUNCTIONS_EXTENSION_VERSION\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;~4\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;AzureWebJobsStorage\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTAZUREFILECONNECTIONSTRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_CONTENTSHARE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPINSIGHTS_INSTRUMENTATIONKEY\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;SCM_DO_BUILD_DURING_DEPLOYMENT\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;false\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;WEBSITE_RUN_FROM_PACKAGE\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  },\n  {\n    \&quot;name\&quot;: \&quot;APPLICATIONINSIGHTS_CONNECTION_STRING\&quot;,\n    \&quot;slotSetting\&quot;: false,\n    \&quot;value\&quot;: \&quot;[redacted]\&quot;\n  }\n]&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;az&quot;,
+          &quot;functionapp&quot;,
+          &quot;config&quot;,
+          &quot;appsettings&quot;,
+          &quot;list&quot;,
+          &quot;--resource-group&quot;,
+          &quot;rg-maze-foundry-lab&quot;,
+          &quot;--name&quot;,
+          &quot;maze-tool-func-prav-ada483&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      },
+      &quot;settings&quot;: {
+        &quot;APPINSIGHTS_INSTRUMENTATIONKEY&quot;: {
+          &quot;configured&quot;: true,
+          &quot;length&quot;: 36
+        },
+        &quot;APPLICATIONINSIGHTS_CONNECTION_STRING&quot;: {
+          &quot;configured&quot;: true,
+          &quot;length&quot;: 240
+        }
+      }
+    },
+    &quot;monitoring_resources&quot;: {
+      &quot;command&quot;: {
+        &quot;returncode&quot;: 0,
+        &quot;stdout_tail&quot;: &quot;[\n  {\n    \&quot;kind\&quot;: null,\n    \&quot;location\&quot;: \&quot;eastus2\&quot;,\n    \&quot;name\&quot;: \&quot;managed-maze-webui-func-prav-ada483-ws\&quot;,\n    \&quot;resourceGroup\&quot;: \&quot;ai_maze-webui-func-prav-ada483_4c33593e-b52d-4a9c-8d8c-c4578cb8d4cc_managed\&quot;,\n    \&quot;type\&quot;: \&quot;microsoft.operationalinsights/workspaces\&quot;\n  },\n  {\n    \&quot;kind\&quot;: \&quot;web\&quot;,\n    \&quot;location\&quot;: \&quot;eastus2\&quot;,\n    \&quot;name\&quot;: \&quot;maze-webui-func-prav-ada483\&quot;,\n    \&quot;resourceGroup\&quot;: \&quot;rg-maze-foundry-lab\&quot;,\n    \&quot;type\&quot;: \&quot;Microsoft.Insights/components\&quot;\n  },\n  {\n    \&quot;kind\&quot;: null,\n    \&quot;location\&quot;: \&quot;global\&quot;,\n    \&quot;name\&quot;: \&quot;Failure Anomalies - maze-webui-func-prav-ada483\&quot;,\n    \&quot;resourceGroup\&quot;: \&quot;rg-maze-foundry-lab\&quot;,\n    \&quot;type\&quot;: \&quot;microsoft.alertsmanagement/smartDetectorAlertRules\&quot;\n  }\n]&quot;,
+        &quot;stderr_tail&quot;: &quot;&quot;,
+        &quot;command&quot;: [
+          &quot;az&quot;,
+          &quot;resource&quot;,
+          &quot;list&quot;,
+          &quot;--query&quot;,
+          &quot;[?contains(name, &#x27;maze&#x27;) &amp;&amp; (type==&#x27;Microsoft.Insights/components&#x27; || type==&#x27;microsoft.operationalinsights/workspaces&#x27; || type==&#x27;microsoft.alertsmanagement/smartDetectorAlertRules&#x27;)].{name:name,type:type,resourceGroup:resourceGroup,location:location,kind:kind}&quot;,
+          &quot;--output&quot;,
+          &quot;json&quot;
+        ]
+      },
+      &quot;resources&quot;: [
+        {
+          &quot;kind&quot;: null,
+          &quot;location&quot;: &quot;eastus2&quot;,
+          &quot;name&quot;: &quot;managed-maze-webui-func-prav-ada483-ws&quot;,
+          &quot;resourceGroup&quot;: &quot;ai_maze-webui-func-prav-ada483_4c33593e-b52d-4a9c-8d8c-c4578cb8d4cc_managed&quot;,
+          &quot;type&quot;: &quot;microsoft.operationalinsights/workspaces&quot;
+        },
+        {
+          &quot;kind&quot;: &quot;web&quot;,
+          &quot;location&quot;: &quot;eastus2&quot;,
+          &quot;name&quot;: &quot;maze-webui-func-prav-ada483&quot;,
+          &quot;resourceGroup&quot;: &quot;rg-maze-foundry-lab&quot;,
+          &quot;type&quot;: &quot;Microsoft.Insights/components&quot;
+        },
+        {
+          &quot;kind&quot;: null,
+          &quot;location&quot;: &quot;global&quot;,
+          &quot;name&quot;: &quot;Failure Anomalies - maze-webui-func-prav-ada483&quot;,
+          &quot;resourceGroup&quot;: &quot;rg-maze-foundry-lab&quot;,
+          &quot;type&quot;: &quot;microsoft.alertsmanagement/smartDetectorAlertRules&quot;
+        }
+      ]
+    },
+    &quot;passed&quot;: true
+  },
+  &quot;summary&quot;: {
+    &quot;shared_app_insights&quot;: &quot;maze-webui-func-prav-ada483&quot;,
+    &quot;removed_app_insights&quot;: &quot;maze-tool-func-prav-ada483&quot;,
+    &quot;removed_managed_law_resource_group&quot;: &quot;ai_maze-tool-func-prav-ada483_a4fb8274-f365-4b8c-b42a-badc02c7562a_managed&quot;,
+    &quot;storage_accounts_changed&quot;: 0,
+    &quot;app_service_plans_changed&quot;: 0,
+    &quot;next_phase&quot;: &quot;Storage consolidation can be evaluated separately, but it was intentionally left untouched here.&quot;
+  }
+}</pre></details>
+  </section>
+</main>
+</body>
+</html>
