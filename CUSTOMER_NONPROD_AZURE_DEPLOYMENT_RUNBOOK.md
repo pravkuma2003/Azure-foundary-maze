@@ -25,6 +25,27 @@ The goal is not to connect the customer tenant back to the personal lab. The
 goal is to reuse the working source code and recreate the architecture in the
 customer tenant with no changes or very small configuration-only changes.
 
+## Package Status
+
+This repository is now intended to be the standalone Maze deployment package,
+not just a narrative runbook.
+
+Current completeness:
+
+```text
+Architecture and deployment order: complete
+Application source folders: included
+Customer clone path: standalone repo
+Secret hygiene rules: included
+Azure resource commands: mostly included
+Known remaining work before a customer dry run: parameterize personal-lab values
+```
+
+Do not treat an unmodified local lab script as customer-ready until it has been
+checked for personal-lab names and endpoints. The source code is portable; some
+deployment scripts still need customer parameters applied before a clean-tenant
+deployment.
+
 ## Current Personal Lab Baseline
 
 The working personal-lab deployment is:
@@ -57,6 +78,27 @@ scripts/
 The important point: the role-agent code, Maze Tool code, and WebUI code should
 stay mostly the same. Tenant-specific values should move into deployment
 parameters and Azure app settings.
+
+## Deployment Package Layers
+
+Keep the customer handoff organized into three layers:
+
+```text
+1. Infrastructure
+   Foundry account, Foundry project, model deployment, Function Apps, storage,
+   App Insights, Log Analytics, managed identities, RBAC.
+
+2. Application code
+   Analyst agent, Worker Agent A, Worker Agent B, Maze Tool Function, WebUI
+   Function.
+
+3. Configuration
+   azure.yaml, toolbox JSON, environment template, app settings, role
+   assignments, validation commands.
+```
+
+The customer deployment should not require knowledge of the larger development
+workspace. It should operate from this standalone repo root.
 
 ## High-Level Architecture
 
@@ -113,6 +155,7 @@ RBAC assignment scope:
   Owner or User Access Administrator, or a customer admin who can run role assignments
 
 Azure AI Foundry:
+  Foundry Project Manager for the identity deploying hosted agents
   Permission to create or use a Foundry account/project
   Permission to deploy or use the selected model
   Permission to create hosted agents and toolboxes
@@ -129,6 +172,26 @@ If your account can create resources but cannot assign RBAC, split the process:
 you deploy the resources, then give the customer admin a short list of exact role
 assignments to apply.
 
+Track these principals explicitly:
+
+```text
+Deployment operator or CI identity:
+  Runs provisioning/deployment commands.
+
+Foundry project identity:
+  Project-level managed identity created by Foundry.
+
+WebUI Function managed identity:
+  Runtime identity that invokes hosted-agent endpoints.
+
+Hosted agent identities:
+  Dedicated Entra identities created for maze-analyst-agent,
+  maze-worker-agent-a, and maze-worker-agent-b.
+
+Human operator:
+  Opens the WebUI and validates the lab.
+```
+
 ## Local Prerequisites
 
 Install or verify:
@@ -140,6 +203,28 @@ azd version
 python3 --version
 zip -v
 ```
+
+Known working baseline from the current lab:
+
+```text
+Hosted agent runtime: python_3_13
+Function Apps runtime: Python 3.11 for Flex Consumption examples.
+Azure Functions host: v4
+Hosted agent dependencies:
+  pydantic-ai-slim[openai,mcp]>=2.35.0
+  azure-ai-agentserver-responses>=2.1.0b2
+  azure-ai-projects>=2.0.1
+  azure-identity>=1.23.0
+WebUI dependency:
+  azure-functions>=1.21.0
+Maze Tool dependency:
+  azure-functions<2
+```
+
+For a customer handoff, pin these dependencies after the first successful
+customer dry run. The current repo records minimum versions because this is a
+learning lab; a repeatable customer package should move to exact pins such as
+`package==version`.
 
 Recommended:
 
@@ -213,6 +298,90 @@ standalone repo containing only this Maze Foundry migration app
 This keeps the customer environment focused on the Azure Foundry migration app
 and avoids unrelated source code, unrelated history, and accidental exposure of
 non-customer artifacts.
+
+## Application Source Inventory
+
+Active runtime source:
+
+```text
+Analyst hosted agent:
+  package: hosted/phase13-split-role-agents/
+  entrypoint: main.py
+  startup: python main.py --provider foundry --role analyst
+  runtime: python_3_13
+  requirements: hosted/phase13-split-role-agents/requirements.txt
+
+Worker Agent A:
+  package: hosted/phase13-split-role-agents/
+  entrypoint: main.py
+  startup: python main.py --provider foundry --role worker_a
+  runtime: python_3_13
+  requirements: hosted/phase13-split-role-agents/requirements.txt
+
+Worker Agent B:
+  package: hosted/phase13-split-role-agents/
+  entrypoint: main.py
+  startup: python main.py --provider foundry --role worker_b
+  runtime: python_3_13
+  requirements: hosted/phase13-split-role-agents/requirements.txt
+
+Shared agent modules:
+  hosted/phase13-split-role-agents/src/provider_config.py
+  hosted/phase13-split-role-agents/src/maze_tool_boundary.py
+  hosted/phase13-split-role-agents/src/reasoning_curriculum.py
+
+Maze Tool Function:
+  package: tools/phase10-maze-tool-function/
+  endpoints: health, openapi, inspect, move
+  requirements: tools/phase10-maze-tool-function/requirements.txt
+
+WebUI Function:
+  package: webui/phase8-azure-webui/
+  entrypoint: function_app.py
+  static UI: webui/phase8-azure-webui/static/index.html
+  requirements: webui/phase8-azure-webui/requirements.txt
+```
+
+The three hosted role agents intentionally share one package. The role boundary
+is selected by `MAZE_HOSTED_ROLE` and the startup command. This keeps the source
+small for the learning lab while still deploying three independent Foundry
+hosted agents.
+
+Dependency files:
+
+```text
+hosted/phase13-split-role-agents/requirements.txt
+webui/phase8-azure-webui/requirements.txt
+tools/phase10-maze-tool-function/requirements.txt
+requirements-phase6.txt
+```
+
+Customer package completeness check:
+
+```bash
+test -f README.md
+test -f CUSTOMER_NONPROD_AZURE_DEPLOYMENT_RUNBOOK.md
+test -f hosted/phase13-split-role-agents/main.py
+test -f hosted/phase13-split-role-agents/azure.yaml
+test -f hosted/phase13-split-role-agents/requirements.txt
+test -f webui/phase8-azure-webui/function_app.py
+test -f webui/phase8-azure-webui/static/index.html
+test -f webui/phase8-azure-webui/requirements.txt
+test -f tools/phase10-maze-tool-function/maze_common.py
+test -f tools/phase10-maze-tool-function/requirements.txt
+test -f tools/phase11-foundry-toolbox/maze_toolbox_dynamic.json
+```
+
+Customer readiness check for personal-lab values:
+
+```bash
+rg -n "prav|ada483|rg-maze-foundry-lab|maze-foundry-prav|maze-webui-func-prav|maze-tool-func-prav|0ecda5cf" .
+```
+
+Expected result before customer deployment: no active deployment config points
+to the personal lab. Historical phase notes may mention the personal lab as
+baseline documentation, but `azure.yaml`, toolbox JSON, app settings, and
+scripts used for customer deployment must use customer parameters.
 
 ## Secret Hygiene
 
@@ -316,6 +485,60 @@ azd auth login --help
 
 Then follow the customer-approved device-code flow.
 
+## Customer Tenant Preflight
+
+Run preflight before creating resources. A brand-new customer non-prod
+subscription can fail because required providers are not registered, policy
+blocks a region/SKU, or the model has no quota.
+
+Provider registration:
+
+```bash
+for provider in \
+  Microsoft.CognitiveServices \
+  Microsoft.Web \
+  Microsoft.Storage \
+  Microsoft.Insights \
+  Microsoft.OperationalInsights \
+  Microsoft.ManagedIdentity \
+  Microsoft.Authorization
+do
+  az provider register --namespace "$provider"
+done
+
+az provider list \
+  --query "[?namespace=='Microsoft.CognitiveServices' || namespace=='Microsoft.Web' || namespace=='Microsoft.Storage' || namespace=='Microsoft.Insights' || namespace=='Microsoft.OperationalInsights' || namespace=='Microsoft.ManagedIdentity' || namespace=='Microsoft.Authorization'].{namespace:namespace,state:registrationState}" \
+  --output table
+```
+
+Policy checks to confirm with the customer platform team:
+
+```text
+[ ] Allowed Azure regions for AI, Functions, Storage, and Log Analytics.
+[ ] Required tags and naming conventions.
+[ ] Whether public network access is allowed for Function Apps.
+[ ] Whether Storage public network access must be disabled.
+[ ] Whether private endpoints are mandatory.
+[ ] Whether Function Apps must use managed identity for storage.
+[ ] Whether Function App SKU must be Flex Consumption, Premium, or App Service.
+[ ] Whether Key Vault is required for function keys and app settings.
+[ ] Whether customer policy allows GlobalStandard model deployments.
+[ ] Whether outbound access from hosted agents to the Maze Tool endpoint is allowed.
+```
+
+Quota checks:
+
+```text
+[ ] Selected model is available in the chosen region.
+[ ] Selected deployment SKU is allowed.
+[ ] Capacity target is available.
+[ ] Token-per-minute and requests-per-minute limits support the intended test.
+```
+
+Use the Azure portal's Foundry/model quota view or the customer-approved quota
+API/CLI process. If quota is not available, choose a different approved model,
+region, or SKU before provisioning the rest of the app.
+
 ## Deployment Order
 
 Use this order. It matches the working lab and keeps each boundary testable.
@@ -333,6 +556,20 @@ Use this order. It matches the working lab and keeps each boundary testable.
 10. Validate health, mission generation, worker execution, telemetry, and feedback.
 ```
 
+For a fully repeatable customer handoff, wrap the same sequence in scripts:
+
+```text
+scripts/customer-preflight.sh
+scripts/customer-deploy-infra.sh
+scripts/customer-deploy-app.sh
+scripts/customer-configure-rbac.sh
+scripts/customer-validate.sh
+scripts/customer-cleanup.sh
+```
+
+Those scripts are the recommended next hardening step. Until they exist, the
+commands in this runbook are the deployment source of truth.
+
 ## Step 1 - Create Resource Group
 
 ```bash
@@ -346,14 +583,59 @@ Use one resource group so cleanup is clear and customer cost reporting is easy.
 
 ## Step 2 - Create Foundry Account and Project
 
-The current personal-lab script is:
+Use one deterministic mechanism for customer deployment: Azure CLI plus ARM/REST
+for the Foundry project. Do not use the portal as the deployment mechanism.
+
+Create the Foundry account:
 
 ```bash
-python3 scripts/phase4_foundry_project_model.py --apply
+az cognitiveservices account create \
+  --name "$FOUNDRY_ACCOUNT_NAME" \
+  --resource-group "$AZURE_RESOURCE_GROUP" \
+  --location "$AZURE_LOCATION" \
+  --kind AIServices \
+  --sku S0 \
+  --custom-domain "$FOUNDRY_ACCOUNT_NAME" \
+  --assign-identity
 ```
 
-Before using it in the customer tenant, parameterize the hardcoded values near
-the top of the script:
+Create the Foundry project:
+
+```bash
+FOUNDRY_PROJECT_ARM_ID="/subscriptions/$CUSTOMER_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP/providers/Microsoft.CognitiveServices/accounts/$FOUNDRY_ACCOUNT_NAME/projects/$FOUNDRY_PROJECT_NAME"
+
+az rest \
+  --method put \
+  --uri "https://management.azure.com${FOUNDRY_PROJECT_ARM_ID}?api-version=2025-04-01-preview" \
+  --body "{
+    \"location\": \"$AZURE_LOCATION\",
+    \"identity\": {\"type\": \"SystemAssigned\"},
+    \"tags\": {
+      \"app\": \"maze-foundry-lab\",
+      \"environment\": \"nonprod\",
+      \"costProfile\": \"learning\"
+    },
+    \"properties\": {}
+  }"
+```
+
+Read back the project endpoint:
+
+```bash
+export FOUNDRY_PROJECT_ENDPOINT=$(
+  az rest \
+    --method get \
+    --uri "https://management.azure.com${FOUNDRY_PROJECT_ARM_ID}?api-version=2025-04-01-preview" \
+    --query "properties.endpoints.\"AI Foundry API\"" \
+    --output tsv
+)
+
+echo "$FOUNDRY_PROJECT_ENDPOINT"
+```
+
+The personal-lab helper script `scripts/phase4_foundry_project_model.py` shows
+the same concept, but it contains lab defaults. For customer use, either apply
+the commands above or first parameterize these constants:
 
 ```text
 LOCATION
@@ -367,31 +649,12 @@ MODEL_SKU
 MODEL_CAPACITY
 ```
 
-For the customer tenant, prefer reading those values from environment variables
-instead of editing them directly:
-
 ```python
 LOCATION = os.environ.get("AZURE_LOCATION", "eastus2")
 RESOURCE_GROUP = os.environ["AZURE_RESOURCE_GROUP"]
 FOUNDRY_PROJECT = os.environ.get("FOUNDRY_PROJECT_NAME", "maze-migration-nonprod")
 MODEL_DEPLOYMENT = os.environ.get("FOUNDRY_MODEL_DEPLOYMENT", "gpt41mini-maze")
 ```
-
-If you use direct Azure CLI commands instead of the script, the resource pattern
-is:
-
-```bash
-az cognitiveservices account create \
-  --name "$FOUNDRY_ACCOUNT_NAME" \
-  --resource-group "$AZURE_RESOURCE_GROUP" \
-  --location "$AZURE_LOCATION" \
-  --kind AIServices \
-  --sku S0 \
-  --custom-domain "$FOUNDRY_ACCOUNT_NAME"
-```
-
-Then create the Foundry project under that account using the Foundry portal,
-`azd`, or the same ARM/REST shape used by `scripts/phase4_foundry_project_model.py`.
 
 Validation:
 
@@ -400,6 +663,12 @@ az cognitiveservices account show \
   --name "$FOUNDRY_ACCOUNT_NAME" \
   --resource-group "$AZURE_RESOURCE_GROUP" \
   --query "{name:name, location:location, endpoint:properties.endpoint}" \
+  --output table
+
+az rest \
+  --method get \
+  --uri "https://management.azure.com${FOUNDRY_PROJECT_ARM_ID}?api-version=2025-04-01-preview" \
+  --query "{name:name, state:properties.provisioningState, endpoint:properties.endpoints.\"AI Foundry API\"}" \
   --output table
 ```
 
@@ -458,7 +727,9 @@ POST /api/maze/move
 The Maze Tool is deterministic. It validates and applies moves. It does not plan
 or solve the maze for the workers.
 
-Create storage and the Function App:
+Create storage and the Function App. For a new customer deployment, prefer Flex
+Consumption for Linux/Python Functions. Linux Consumption is a legacy option and
+is not the recommended starting point for new customer work.
 
 ```bash
 az storage account create \
@@ -471,12 +742,17 @@ az functionapp create \
   --name "$TOOL_FUNCTION_APP_NAME" \
   --resource-group "$AZURE_RESOURCE_GROUP" \
   --storage-account "$TOOL_STORAGE_ACCOUNT" \
-  --consumption-plan-location "$AZURE_LOCATION" \
+  --flexconsumption-location "$AZURE_LOCATION" \
   --runtime python \
   --runtime-version 3.11 \
   --functions-version 4 \
   --os-type Linux
 ```
+
+If the installed Azure CLI does not support `--flexconsumption-location`, update
+the Azure CLI or have the customer platform team create the Function App on Flex
+Consumption through their approved deployment path. Use classic Linux
+Consumption only as a documented exception.
 
 Package and deploy:
 
@@ -529,7 +805,60 @@ OpenAPI URL:
   https://<tool-function-app>.azurewebsites.net/api/maze/openapi.json
 
 Auth:
-  function key or customer-approved auth mechanism
+  Function-level key stored as a Foundry project connection.
+```
+
+Important: `tools/phase11-foundry-toolbox/maze_toolbox_dynamic.json` may still
+contain the personal-lab server URL. Before creating the customer toolbox, make
+the `servers[0].url` value point to the customer Maze Tool Function App:
+
+```json
+"servers": [
+  {
+    "url": "https://<customer-maze-tool-function-app>.azurewebsites.net"
+  }
+]
+```
+
+For this deployment package, use Function-level auth for the Maze Tool. The key
+is retrieved from the Maze Tool Function App, stored in a Foundry project
+connection, and used by the toolbox as the `x-functions-key` header. Do not put
+the raw key in Git or in the toolbox JSON.
+
+Retrieve the function key into a shell variable:
+
+```bash
+export MAZE_TOOL_FUNCTION_KEY=$(
+  az functionapp keys list \
+    --resource-group "$AZURE_RESOURCE_GROUP" \
+    --name "$TOOL_FUNCTION_APP_NAME" \
+    --query "functionKeys.default" \
+    --output tsv
+)
+```
+
+Create or update the Foundry connection that stores the key:
+
+```bash
+azd ai connection create maze-tool-function-key \
+  --kind remote-tool \
+  --target "https://$TOOL_FUNCTION_APP_NAME.azurewebsites.net" \
+  --auth-type custom-keys \
+  --custom-key "x-functions-key=$MAZE_TOOL_FUNCTION_KEY" \
+  --force \
+  --project-endpoint "$FOUNDRY_PROJECT_ENDPOINT" \
+  --output json
+```
+
+Rotation process:
+
+```text
+1. Regenerate or create a new Function App key.
+2. Update the Foundry connection with the new key.
+3. Restart or redeploy hosted agents only if the toolbox endpoint or connection
+   identity changes.
+4. Validate /api/maze/inspect and /api/maze/move through the agent/toolbox path.
+5. Retire the old key.
 ```
 
 Create or update the toolbox:
@@ -579,35 +908,109 @@ maze-worker-agent-a
 maze-worker-agent-b
 ```
 
-Before deploying in the customer tenant, update `hosted/phase13-split-role-agents/azure.yaml`
-so it no longer points to the personal lab endpoint:
+The deployment package must contain a complete customer-ready `azure.yaml`.
+The current repo has `hosted/phase13-split-role-agents/azure.yaml`, but it still
+contains personal-lab endpoint values. Before customer deployment, replace it
+with this parameterized version or make equivalent changes:
 
 ```yaml
+name: maze-foundry-split-role-agents
+metadata:
+  template: maze-foundry-split-role-agents@0.1.0
+
 services:
-  maze-migration-lab:
+  maze-migration-project:
     host: azure.ai.project
     endpoint: ${FOUNDRY_PROJECT_ENDPOINT}
+
+  maze-analyst-agent:
+    project: .
+    host: azure.ai.agent
+    language: python
+    uses:
+      - maze-migration-project
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${FOUNDRY_MODEL_DEPLOYMENT}
+      FOUNDRY_MODEL_DEPLOYMENT: ${FOUNDRY_MODEL_DEPLOYMENT}
+      FOUNDRY_PROJECT_ENDPOINT: ${FOUNDRY_PROJECT_ENDPOINT}
+      MAZE_PROVIDER: foundry
+      MAZE_HOSTED_ROLE: analyst
+      MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+    codeConfiguration:
+      dependencyResolution: remote_build
+      entryPoint: main.py
+      runtime: python_3_13
+    container:
+      resources:
+        cpu: "0.5"
+        memory: "1Gi"
+    kind: hosted
+    name: maze-analyst-agent
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    startupCommand: python main.py --provider foundry --role analyst
+
+  maze-worker-agent-a:
+    project: .
+    host: azure.ai.agent
+    language: python
+    uses:
+      - maze-migration-project
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${FOUNDRY_MODEL_DEPLOYMENT}
+      FOUNDRY_MODEL_DEPLOYMENT: ${FOUNDRY_MODEL_DEPLOYMENT}
+      FOUNDRY_PROJECT_ENDPOINT: ${FOUNDRY_PROJECT_ENDPOINT}
+      MAZE_PROVIDER: foundry
+      MAZE_HOSTED_ROLE: worker_a
+      MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+    codeConfiguration:
+      dependencyResolution: remote_build
+      entryPoint: main.py
+      runtime: python_3_13
+    container:
+      resources:
+        cpu: "0.5"
+        memory: "1Gi"
+    kind: hosted
+    name: maze-worker-agent-a
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    startupCommand: python main.py --provider foundry --role worker_a
+
+  maze-worker-agent-b:
+    project: .
+    host: azure.ai.agent
+    language: python
+    uses:
+      - maze-migration-project
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${FOUNDRY_MODEL_DEPLOYMENT}
+      FOUNDRY_MODEL_DEPLOYMENT: ${FOUNDRY_MODEL_DEPLOYMENT}
+      FOUNDRY_PROJECT_ENDPOINT: ${FOUNDRY_PROJECT_ENDPOINT}
+      MAZE_PROVIDER: foundry
+      MAZE_HOSTED_ROLE: worker_b
+      MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+    codeConfiguration:
+      dependencyResolution: remote_build
+      entryPoint: main.py
+      runtime: python_3_13
+    container:
+      resources:
+        cpu: "0.5"
+        memory: "1Gi"
+    kind: hosted
+    name: maze-worker-agent-b
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    startupCommand: python main.py --provider foundry --role worker_b
 ```
 
-Keep these environment variables in each agent service:
-
-```yaml
-env:
-  AZURE_AI_MODEL_DEPLOYMENT_NAME: ${FOUNDRY_MODEL_DEPLOYMENT}
-  FOUNDRY_MODEL_DEPLOYMENT: ${FOUNDRY_MODEL_DEPLOYMENT}
-  FOUNDRY_PROJECT_ENDPOINT: ${FOUNDRY_PROJECT_ENDPOINT}
-  MAZE_PROVIDER: foundry
-  MAZE_HOSTED_ROLE: analyst | worker_a | worker_b
-  MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
-```
-
-The role value changes by agent:
-
-```text
-maze-analyst-agent   -> MAZE_HOSTED_ROLE=analyst
-maze-worker-agent-a  -> MAZE_HOSTED_ROLE=worker_a
-maze-worker-agent-b  -> MAZE_HOSTED_ROLE=worker_b
-```
+This `azure.yaml` is the source of truth for the three independent hosted
+agents. It also proves that all three roles use the same package and different
+startup roles.
 
 Deploy:
 
@@ -661,7 +1064,8 @@ POST /api/worker-steps
 POST /api/feedback
 ```
 
-Create storage and the Function App:
+Create storage and the Function App. Use Flex Consumption for new deployments
+unless the customer has a specific approved reason to use another plan.
 
 ```bash
 az storage account create \
@@ -674,13 +1078,15 @@ az functionapp create \
   --name "$WEBUI_FUNCTION_APP_NAME" \
   --resource-group "$AZURE_RESOURCE_GROUP" \
   --storage-account "$WEBUI_STORAGE_ACCOUNT" \
-  --consumption-plan-location "$AZURE_LOCATION" \
+  --flexconsumption-location "$AZURE_LOCATION" \
   --runtime python \
   --runtime-version 3.11 \
   --functions-version 4 \
   --os-type Linux \
   --assign-identity
 ```
+
+Keep the hosted agents on `python_3_13` as defined in `azure.yaml`.
 
 Package and deploy:
 
@@ -772,6 +1178,44 @@ customer-managed deployment variables may be required.
 
 ## Step 10 - RBAC
 
+Use least privilege where the customer tenant supports the current Foundry role
+model.
+
+RBAC matrix:
+
+```text
+Deployment operator or CI identity:
+  Scope: Foundry project
+  Role: Foundry Project Manager
+  Purpose: deploy and update hosted agents.
+
+Deployment operator or CI identity:
+  Scope: resource group
+  Role: Contributor
+  Purpose: create Function Apps, storage, monitoring, and model deployment.
+
+RBAC admin identity:
+  Scope: resource group or subscription
+  Role: Owner or User Access Administrator
+  Purpose: create role assignments.
+
+WebUI Function managed identity:
+  Scope: Foundry project
+  Role: Foundry Agent Consumer
+  Purpose: invoke hosted-agent endpoints from /api/mission and /api/worker-steps.
+
+WebUI Function managed identity:
+  Scope: WebUI storage account
+  Role: Storage Blob Data Contributor, if using identity-based storage.
+  Purpose: read/write durable Team Memory.
+
+Hosted agent identities:
+  Scope: Foundry project/model/toolbox resources
+  Role: customer-approved Foundry/model/tool roles required by hosted-agent
+        execution.
+  Purpose: let Analyst and Workers use the model and the Maze Tool toolbox.
+```
+
 Get the WebUI managed identity principal:
 
 ```bash
@@ -784,23 +1228,26 @@ WEBUI_PRINCIPAL_ID=$(
 )
 ```
 
-Assign project-scoped Foundry access:
+Assign runtime project access to the WebUI identity:
 
 ```bash
 az role assignment create \
   --assignee "$WEBUI_PRINCIPAL_ID" \
-  --role "Foundry User" \
+  --role "Foundry Agent Consumer" \
   --scope "/subscriptions/$CUSTOMER_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP/providers/Microsoft.CognitiveServices/accounts/$FOUNDRY_ACCOUNT_NAME/projects/$FOUNDRY_PROJECT_NAME"
 ```
 
-If model calls fail with authorization errors, the customer admin may also need
-to assign a model/account role such as:
+If the customer tenant has not enabled `Foundry Agent Consumer` or the WebUI
+needs broader project operations during the lab, use `Foundry User` temporarily
+and record the reason. Do not make broader access the default.
+
+Assign hosted-agent deployment permission to the deployment identity:
 
 ```bash
 az role assignment create \
-  --assignee "$WEBUI_PRINCIPAL_ID" \
-  --role "Cognitive Services OpenAI User" \
-  --scope "/subscriptions/$CUSTOMER_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP/providers/Microsoft.CognitiveServices/accounts/$FOUNDRY_ACCOUNT_NAME"
+  --assignee "<deployment-operator-or-ci-principal-id>" \
+  --role "Foundry Project Manager" \
+  --scope "/subscriptions/$CUSTOMER_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP/providers/Microsoft.CognitiveServices/accounts/$FOUNDRY_ACCOUNT_NAME/projects/$FOUNDRY_PROJECT_NAME"
 ```
 
 Storage access depends on how `AzureWebJobsStorage` is configured:
@@ -816,6 +1263,20 @@ Identity mode:
 The current lab uses the normal Function App storage setting. For stricter
 customer tenants, prefer identity-based storage access if their platform team
 requires it.
+
+After hosted agents are deployed, inspect the dedicated agent identities and
+confirm whether customer policy requires additional assignments:
+
+```bash
+azd ai agent show maze-analyst-agent --output json
+azd ai agent show maze-worker-agent-a --output json
+azd ai agent show maze-worker-agent-b --output json
+```
+
+If a hosted agent fails to call the model or toolbox because of authorization,
+assign only the missing role at the narrowest supported scope. Common examples
+are project-level Foundry access, model/account invocation access, or access to
+the toolbox connection. Do not grant subscription-wide roles for this lab.
 
 ## Step 11 - Network and VPN Considerations
 
@@ -983,13 +1444,19 @@ Use this checklist before calling the customer non-prod deployment complete:
 
 ```text
 [ ] Azure CLI is logged into the customer tenant, not the personal tenant.
+[ ] Provider registration, policy, and quota preflight passed.
 [ ] All resources are in the customer non-prod subscription.
 [ ] Resource group is customer-owned and tagged.
 [ ] Foundry account and project exist in the customer tenant.
 [ ] Model deployment exists and has approved capacity.
+[ ] Function Apps use Flex Consumption unless a customer-approved exception exists.
 [ ] Maze Tool Function App health endpoint works.
 [ ] Foundry toolbox exists and points to the customer Maze Tool Function App.
+[ ] Toolbox uses a Foundry connection for the Maze Tool function key.
 [ ] Analyst, Worker A, and Worker B hosted agents are running.
+[ ] Hosted-agent azure.yaml is complete and parameterized for the customer tenant.
+[ ] Deployment identity has Foundry Project Manager at the required scope.
+[ ] WebUI managed identity has Foundry Agent Consumer or documented equivalent.
 [ ] WebUI Function App loads from the customer URL.
 [ ] Run Fresh Maze creates a new Analyst-generated maze before Worker execution.
 [ ] Play invokes workers and renders parallel ticks.
@@ -998,6 +1465,7 @@ Use this checklist before calling the customer non-prod deployment complete:
 [ ] Feedback appears in App Insights or Log Analytics.
 [ ] No personal-lab endpoints remain in app settings or azure.yaml.
 [ ] No secrets were committed.
+[ ] Exact dependency versions are pinned or recorded after the customer dry run.
 ```
 
 ## Cost Controls
@@ -1008,7 +1476,7 @@ Recommended customer non-prod defaults:
 One resource group.
 One Foundry project.
 One small model deployment.
-Consumption-plan Azure Functions unless customer policy requires another plan.
+Flex Consumption Azure Functions unless customer policy requires another plan.
 One WebUI Function App.
 One Maze Tool Function App.
 One shared Application Insights component.
@@ -1156,6 +1624,12 @@ https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox
 
 Foundry tool catalog:
 https://learn.microsoft.com/en-au/azure/ai-foundry/agents/concepts/tool-catalog
+
+Foundry RBAC:
+https://learn.microsoft.com/en-us/azure/foundry/concepts/rbac-foundry
+
+Azure Functions Flex Consumption:
+https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan
 
 Azure Functions storage:
 https://learn.microsoft.com/en-us/azure/azure-functions/storage-considerations
