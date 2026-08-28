@@ -75,14 +75,35 @@ image tags back into ACR. `None` is correct only for no-push validation tasks or
 source contexts that do not need registry credentials. Phase 22 now uses ACR
 Task default registry authentication for push-enabled builds.
 
-To update the existing task definition and run it once:
+After the script fix, the task was updated and a manual validation run
+succeeded:
 
-```bash
-export PHASE22_GIT_ACCESS_TOKEN="<github-token-with-repo-webhook-access>"
-python3 scripts/phase22_acr_task_build_trigger.py --apply --run-once
+```text
+Command:
+  python3 scripts/phase22_acr_task_build_trigger.py --apply --run-once
+
+Result:
+  status: complete
+  successful ACR run: ch7
+  git-head-revision: 93ff0ef3950dffc8d9f68f963544d07933a471f2
+  duration: 53s
+
+Images pushed:
+  mazefoundryacrpravada483.azurecr.io/maze-role-agent:phase22-latest
+  mazefoundryacrpravada483.azurecr.io/maze-role-agent:phase22-ch7
+
+Digest:
+  sha256:4f758f4a513622ceb1fe5778b147b17233eabb68224baf0263aa4c64dbb69110
 ```
 
-After the task has at least one successful run:
+Current runtime status:
+
+```text
+ACR candidate image exists.
+Foundry Docker-backed agents have not yet been manually promoted to phase22-ch7.
+```
+
+To promote the candidate image to the Docker-backed Foundry agents:
 
 ```bash
 python3 scripts/phase22_acr_task_build_trigger.py --promote-latest-run
