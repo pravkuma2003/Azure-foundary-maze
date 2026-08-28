@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 20</title>
+  <style>
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f8fa;color:#17202a}
+    main{width:min(980px,calc(100% - 32px));margin:0 auto;padding:32px 0}
+    .card{background:#fff;border:1px solid #d9dee7;border-radius:8px;padding:18px;margin:14px 0}
+    .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .node{border:1px solid #d9dee7;border-left:5px solid #285da8;border-radius:8px;padding:14px;background:#fff}
+    .node.image{border-left-color:#a36b00}.node.foundry{border-left-color:#21745d}.node.safe{border-left-color:#6b7280}
+    h1{margin:0 0 8px;font-size:38px} h2{margin:0 0 10px} p{margin:0;color:#5f6b7a} strong{display:block;margin-bottom:6px}
+    code{background:#eef2f7;padding:2px 5px;border-radius:5px}
+    @media (max-width:800px){.flow{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Phase 20 - Foundry Agents From ACR Image</h1>
+  <p>Run new hosted agents from the Phase 19 container image while preserving the working source-deployed agents.</p>
+  <section class="card">
+    <h2>Runtime Flow</h2>
+    <div class="flow">
+      <article class="node image"><strong>ACR Image</strong><p><code>maze-role-agent:phase19</code> contains the Python app and dependencies.</p></article>
+      <article class="node foundry"><strong>Foundry</strong><p>Deploys hosted agents with <code>language: docker</code> and <code>image:</code>.</p></article>
+      <article class="node"><strong>Role Startup</strong><p>The same image starts as Analyst, Worker A, or Worker B through the role flag.</p></article>
+      <article class="node safe"><strong>Existing Agents</strong><p>Original source <code>remote_build</code> agents remain untouched for rollback.</p></article>
+    </div>
+  </section>
+  <section class="card">
+    <h2>Learning Boundary</h2>
+    <p>This phase changes the Foundry runtime package only. Agent prompts, tools, memory, feedback, and WebUI behavior remain the same.</p>
+  </section>
+</main>
+</body>
+</html>

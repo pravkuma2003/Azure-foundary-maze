@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: phase20-docker-image-runtime
+metadata:
+    template: phase20-docker-image-runtime@0.1.0
+services:
+    maze-analyst-agent-docker:
+        project: .
+        host: azure.ai.agent
+        language: docker
+        image: ${PHASE20_AGENT_IMAGE}
+        docker:
+            remoteBuild: true
+        uses:
+            - maze-migration-lab
+        env:
+            AZURE_AI_MODEL_DEPLOYMENT_NAME: ${FOUNDRY_MODEL_DEPLOYMENT}
+            MAZE_HOSTED_ROLE: analyst
+            MAZE_PROVIDER: foundry
+            MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+        container:
+            resources:
+                cpu: "0.5"
+                memory: 1Gi
+        kind: hosted
+        name: maze-analyst-agent-docker
+        protocols:
+            - protocol: responses
+              version: 2.0.0
+        startupCommand: python main.py --provider foundry --role analyst --model ${FOUNDRY_MODEL_DEPLOYMENT}
+    maze-migration-lab:
+        host: azure.ai.project
+        endpoint: https://maze-foundry-prav-ada483.services.ai.azure.com/api/projects/maze-migration-lab
+    maze-worker-agent-a-docker:
+        project: .
+        host: azure.ai.agent
+        language: docker
+        image: ${PHASE20_AGENT_IMAGE}
+        docker:
+            remoteBuild: true
+        uses:
+            - maze-migration-lab
+        env:
+            AZURE_AI_MODEL_DEPLOYMENT_NAME: ${FOUNDRY_MODEL_DEPLOYMENT}
+            MAZE_HOSTED_ROLE: worker_a
+            MAZE_PROVIDER: foundry
+            MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+        container:
+            resources:
+                cpu: "0.5"
+                memory: 1Gi
+        kind: hosted
+        name: maze-worker-agent-a-docker
+        protocols:
+            - protocol: responses
+              version: 2.0.0
+        startupCommand: python main.py --provider foundry --role worker_a --model ${FOUNDRY_MODEL_DEPLOYMENT}
+    maze-worker-agent-b-docker:
+        project: .
+        host: azure.ai.agent
+        language: docker
+        image: ${PHASE20_AGENT_IMAGE}
+        docker:
+            remoteBuild: true
+        uses:
+            - maze-migration-lab
+        env:
+            AZURE_AI_MODEL_DEPLOYMENT_NAME: ${FOUNDRY_MODEL_DEPLOYMENT}
+            MAZE_HOSTED_ROLE: worker_b
+            MAZE_PROVIDER: foundry
+            MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+        container:
+            resources:
+                cpu: "0.5"
+                memory: 1Gi
+        kind: hosted
+        name: maze-worker-agent-b-docker
+        protocols:
+            - protocol: responses
+              version: 2.0.0
+        startupCommand: python main.py --provider foundry --role worker_b --model ${FOUNDRY_MODEL_DEPLOYMENT}
+infra:
+    provider: microsoft.foundry

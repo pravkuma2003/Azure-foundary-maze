@@ -45,6 +45,8 @@ Phase 16  Dynamic Mission Design
 Phase 17  Parallel Worker Step Execution
 Phase 18  Human Feedback Telemetry
 Phase 19  Docker Packaging Boundary
+Phase 20  Foundry Hosted Agents From ACR Image
+Phase 21  GitHub Source to ACR Image Build
 ```
 
 ## Current Status
@@ -54,6 +56,8 @@ Deployment complete through Phase 18.
 Phase 18 records per-worker thumbs feedback in Application Insights and durable
 Team Memory. Phase 19 introduces Docker packaging through Azure Container
 Registry remote build without changing agent behavior.
+Phase 20 deploys side-by-side Docker-backed Foundry hosted agents from the ACR
+image so Foundry runs a prebuilt container instead of source remote_build.
 ```
 
 ## Phase Intent
@@ -150,3 +154,15 @@ Phase 19: Docker Packaging Boundary
 Build the same hosted-agent Python code as an Azure Container Registry image
 using Azure remote build. Local Docker is not required, and agent behavior does
 not change.
+
+Phase 20: Foundry Hosted Agents From ACR Image
+
+Deploy side-by-side Docker-backed Foundry hosted agents that use the Phase 19
+ACR image as their runtime package. This proves the runtime can come from ACR
+without replacing the existing source-built agents.
+
+Phase 21: GitHub Source to ACR Image Build
+
+Move the image-build input from the local checked-out folder to the GitHub repo:
+edit on Mac, commit/push to GitHub, let ACR build from the GitHub ref, and point
+Foundry at that image tag or digest.
