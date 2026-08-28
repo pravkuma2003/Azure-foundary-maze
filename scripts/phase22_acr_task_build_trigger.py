@@ -111,6 +111,8 @@ def create_or_update_task(apply: bool, git_token: str | None) -> dict[str, Any]:
         github_context(),
         "--file",
         "Dockerfile",
+        "--auth-mode",
+        "None",
         "--commit-trigger-enabled",
         "true",
         "--pull-request-trigger-enabled",
@@ -145,6 +147,8 @@ def create_or_update_task(apply: bool, git_token: str | None) -> dict[str, Any]:
             github_context(),
             "--file",
             "Dockerfile",
+            "--auth-mode",
+            "None",
             "--commit-trigger-enabled",
             "true",
             "--pull-request-trigger-enabled",
@@ -233,7 +237,8 @@ def main() -> int:
     git_token, token_source = get_git_token()
 
     task = create_or_update_task(args.apply, git_token)
-    run_once = run_task_once(args.apply and args.run_once)
+    task_ready = task.get("status") == "ready"
+    run_once = run_task_once(args.apply and args.run_once and task_ready)
     run_id, latest_run = latest_successful_run_id()
     acr_payload = parse_json_text(acr_show.get("stdout", "")) if acr_show["returncode"] == 0 else None
     login_server = acr_payload.get("loginServer") if isinstance(acr_payload, dict) else f"{ACR_NAME}.azurecr.io"

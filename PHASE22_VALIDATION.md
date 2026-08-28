@@ -46,3 +46,33 @@ python3 scripts/phase22_acr_task_build_trigger.py --promote-latest-run
 
 This keeps image creation automatic but runtime rollout controlled by the
 operator.
+
+## Current Lab Status
+
+The Phase 22 code and documentation are in place, but the ACR Task was not
+created during the first apply attempt because no GitHub token was available on
+this machine:
+
+```text
+PHASE22_GIT_ACCESS_TOKEN: not set
+GITHUB_TOKEN: not set
+GH_TOKEN: not set
+gh CLI: not installed
+```
+
+Azure requires `--git-access-token` when creating a GitHub source trigger
+because ACR must register a GitHub webhook. The repo can remain public and the
+ACR source auth mode can stay `None`; the token is for trigger/webhook setup.
+
+To complete provisioning:
+
+```bash
+export PHASE22_GIT_ACCESS_TOKEN="<github-token-with-repo-webhook-access>"
+python3 scripts/phase22_acr_task_build_trigger.py --apply --run-once
+```
+
+After the task has at least one successful run:
+
+```bash
+python3 scripts/phase22_acr_task_build_trigger.py --promote-latest-run
+```
