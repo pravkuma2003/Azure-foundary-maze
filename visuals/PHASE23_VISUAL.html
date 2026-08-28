@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 23</title>
+  <style>
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f8fa;color:#17202a}
+    main{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:32px 0}
+    h1{margin:0 0 8px;font-size:38px} h2{margin:0 0 10px} p{margin:0;color:#5f6b7a}
+    .card{background:#fff;border:1px solid #d9dee7;border-radius:8px;padding:18px;margin:14px 0}
+    .flow{display:grid;grid-template-columns:repeat(7,1fr);gap:12px}
+    .node{border:1px solid #d9dee7;border-left:5px solid #285da8;border-radius:8px;padding:14px;background:#fff;min-height:142px}
+    .node.git{border-left-color:#24292f}.node.build{border-left-color:#a36b00}.node.test{border-left-color:#21745d}.node.stop{border-left-color:#a83232}.node.promote{border-left-color:#7c3aed}
+    strong{display:block;margin-bottom:8px} code{background:#eef2f7;padding:2px 5px;border-radius:5px}
+    ul{margin:8px 0 0;padding-left:18px;color:#5f6b7a}.caption{margin-top:12px;color:#5f6b7a}
+    @media (max-width:1000px){.flow{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Phase 23 - Automated Validation Before Promotion</h1>
+  <p>Candidate images must pass role smoke tests before Foundry promotion.</p>
+
+  <section class="card">
+    <h2>Gated Runtime Flow</h2>
+    <div class="flow">
+      <article class="node"><strong>Mac</strong><p>Developer edits, commits, and pushes role-agent code.</p></article>
+      <article class="node git"><strong>GitHub</strong><p>Commit on <code>main</code> triggers the ACR Task.</p></article>
+      <article class="node build"><strong>ACR Build</strong><p>Builds <code>maze-role-agent:phase22-&lt;run-id&gt;</code>.</p></article>
+      <article class="node test"><strong>Validation Gate</strong><ul><li>tag exists</li><li>Analyst starts</li><li>Worker A starts</li><li>Worker B starts</li></ul></article>
+      <article class="node stop"><strong>Failed Gate</strong><p>Do not promote. Keep Foundry on the previous image.</p></article>
+      <article class="node promote"><strong>Manual Promote</strong><p>Only after validation passes, update Foundry image.</p></article>
+      <article class="node test"><strong>Foundry</strong><p>Docker-backed agents run the validated image.</p></article>
+    </div>
+    <p class="caption">Phase 23 validates the artifact before runtime rollout; it does not yet score LLM reasoning quality.</p>
+  </section>
+</main>
+</body>
+</html>

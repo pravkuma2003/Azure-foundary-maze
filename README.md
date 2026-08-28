@@ -24,8 +24,8 @@ change.
 ## Current Status
 
 ```text
-Status: Azure-native split-agent WebUI deployed through Phase 18; Phase 22 GitHub-triggered ACR build and manual Foundry promotion complete
-Active phase: Phase 22 - Docker-backed Foundry agents promoted to maze-role-agent:phase22-ch8
+Status: Azure-native split-agent WebUI deployed through Phase 18; Phase 23 validation gate and gated Foundry promotion complete
+Active phase: Phase 23 - Docker-backed Foundry agents promoted after validation to maze-role-agent:phase22-ch9
 Source app: ../multi-agent-reasoning-from-scratch
 Target platform: Microsoft Foundry
 Primary tooling: Foundry Toolkit, Azure Developer CLI, Foundry-hosted agents

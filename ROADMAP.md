@@ -48,6 +48,7 @@ Phase 19  Docker Packaging Boundary
 Phase 20  Foundry Hosted Agents From ACR Image
 Phase 21  GitHub Source to ACR Image Build
 Phase 22  Automated Build Trigger with Manual Foundry Promotion
+Phase 23  Automated Validation Before Promotion
 ```
 
 ## Current Status
@@ -65,6 +66,10 @@ Phase 22 adds and validates a GitHub-triggered ACR Task so pushes create
 candidate images automatically. Manual run `ch7` proved the task, automatic run
 `ch8` proved the GitHub webhook path, and the Docker-backed Foundry agents were
 manually promoted to `maze-role-agent:phase22-ch8`.
+Phase 23 adds and validates a gate before promotion. ACR candidate image
+`phase22-ch9` passed low-cost container smoke tests for Analyst, Worker A, and
+Worker B, then the Docker-backed Foundry agents were promoted to version 4 from
+that validated image.
 ```
 
 ## Phase Intent
@@ -179,3 +184,9 @@ Phase 22: Automated Build Trigger with Manual Foundry Promotion
 Create an ACR Task wired to the GitHub repo. A push to `main` automatically
 builds candidate image tags, but Docker-backed Foundry hosted agents change only
 when the operator runs the manual promotion command.
+
+Phase 23: Automated Validation Before Promotion
+
+Validate the newest candidate image before promotion. The gate confirms the
+run-specific image tag exists and that Analyst, Worker A, and Worker B all start
+from the container image and return structured JSON in test-provider mode.
