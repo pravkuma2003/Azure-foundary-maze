@@ -49,22 +49,33 @@ operator.
 
 ## Current Lab Status
 
-The Phase 22 code and documentation are in place, but the ACR Task was not
-created during the first apply attempt because no GitHub token was available on
-this machine:
+The GitHub-triggered ACR Task was created successfully after
+`PHASE22_GIT_ACCESS_TOKEN` was exported on the Mac:
 
 ```text
-PHASE22_GIT_ACCESS_TOKEN: not set
-GITHUB_TOKEN: not set
-GH_TOKEN: not set
-gh CLI: not installed
+Task:
+  maze-role-agent-github-build
+
+GitHub context:
+  https://github.com/pravkuma2003/Azure-foundary-maze.git#main:hosted/maze-role-agents
+
+Trigger:
+  GitHub commit trigger enabled on main
 ```
 
-Azure requires `--git-access-token` when creating a GitHub source trigger
-because ACR must register a GitHub webhook. The repo can remain public and the
-ACR source auth mode can stay `None`; the token is for trigger/webhook setup.
+The first manual `--run-once` attempt created ACR run `ch4`, but that run failed
+after source download:
 
-To complete provisioning:
+```text
+when specifying push, at least one credential is required
+```
+
+Root cause: the task had been created with `--auth-mode None` while also pushing
+image tags back into ACR. `None` is correct only for no-push validation tasks or
+source contexts that do not need registry credentials. Phase 22 now uses ACR
+Task default registry authentication for push-enabled builds.
+
+To update the existing task definition and run it once:
 
 ```bash
 export PHASE22_GIT_ACCESS_TOKEN="<github-token-with-repo-webhook-access>"

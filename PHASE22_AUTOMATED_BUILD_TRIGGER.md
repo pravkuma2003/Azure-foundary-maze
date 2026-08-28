@@ -169,6 +169,14 @@ gh auth token
 For this public repo, the token only needs enough access for Azure Container
 Registry to configure the GitHub source trigger/webhook.
 
+The GitHub token is not used as an ACR push credential. The task still needs ACR
+Task default registry authentication so the built image can be pushed to:
+
+```text
+maze-role-agent:phase22-latest
+maze-role-agent:phase22-<run-id>
+```
+
 ## Lesson Boundary
 
 This phase does not add GitHub Actions and does not automatically deploy to
