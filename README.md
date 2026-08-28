@@ -25,7 +25,7 @@ change.
 
 ```text
 Status: Azure-native split-agent WebUI deployed through Phase 18, with side-by-side Docker image runtime validation in Phase 20
-Active phase: Phase 20 - Foundry Hosted Agents From ACR Image
+Active phase: Phase 21 - GitHub Source to ACR Image Build
 Source app: ../multi-agent-reasoning-from-scratch
 Target platform: Microsoft Foundry
 Primary tooling: Foundry Toolkit, Azure Developer CLI, Foundry-hosted agents

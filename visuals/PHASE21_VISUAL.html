@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azure Foundry Maze Migration - Phase 21</title>
+  <style>
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f8fa;color:#17202a}
+    main{width:min(1040px,calc(100% - 32px));margin:0 auto;padding:32px 0}
+    h1{margin:0 0 8px;font-size:38px} h2{margin:0 0 10px} p{margin:0;color:#5f6b7a}
+    .card{background:#fff;border:1px solid #d9dee7;border-radius:8px;padding:18px;margin:14px 0}
+    .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:stretch}
+    .node{border:1px solid #d9dee7;border-left:5px solid #285da8;border-radius:8px;padding:14px;background:#fff;min-height:116px}
+    .node.git{border-left-color:#24292f}.node.acr{border-left-color:#a36b00}.node.foundry{border-left-color:#21745d}.node.safe{border-left-color:#6b7280}
+    strong{display:block;margin-bottom:8px} code{background:#eef2f7;padding:2px 5px;border-radius:5px}
+    .caption{margin-top:12px;color:#5f6b7a}
+    @media (max-width:900px){.flow{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Phase 21 - GitHub Source to ACR Image Build</h1>
+  <p>Build the hosted role-agent image from GitHub, then run that image in Foundry.</p>
+
+  <section class="card">
+    <h2>Deployment Flow</h2>
+    <div class="flow">
+      <article class="node"><strong>Mac</strong><p>Edit code, commit, and push. The Mac does not build the container.</p></article>
+      <article class="node git"><strong>GitHub</strong><p>Source of truth for the build ref: branch, tag, or commit.</p></article>
+      <article class="node acr"><strong>ACR Build</strong><p>ACR pulls <code>hosted/phase13-split-role-agents</code> and builds the image.</p></article>
+      <article class="node acr"><strong>ACR Image</strong><p><code>maze-role-agent:phase21-github-main</code> becomes the deployable runtime package.</p></article>
+      <article class="node foundry"><strong>Foundry</strong><p>Docker-backed hosted agents run the Git-built image.</p></article>
+    </div>
+    <p class="caption">The application logic stays the same; the source of the container build moves from local filesystem to GitHub.</p>
+  </section>
+
+  <section class="card">
+    <h2>Learning Boundary</h2>
+    <p>This is still an operator-triggered build, not an automatic CI/CD pipeline. The next lesson can add a GitHub trigger or release workflow.</p>
+  </section>
+</main>
+</body>
+</html>

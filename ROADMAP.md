@@ -58,6 +58,8 @@ Team Memory. Phase 19 introduces Docker packaging through Azure Container
 Registry remote build without changing agent behavior.
 Phase 20 deploys side-by-side Docker-backed Foundry hosted agents from the ACR
 image so Foundry runs a prebuilt container instead of source remote_build.
+Phase 21 moves the ACR build source from the local folder to GitHub so the image
+runtime can be rebuilt from a public repo branch, tag, or commit.
 ```
 
 ## Phase Intent
