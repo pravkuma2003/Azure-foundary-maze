@@ -47,6 +47,7 @@ Phase 18  Human Feedback Telemetry
 Phase 19  Docker Packaging Boundary
 Phase 20  Foundry Hosted Agents From ACR Image
 Phase 21  GitHub Source to ACR Image Build
+Phase 22  Automated Build Trigger with Manual Foundry Promotion
 ```
 
 ## Current Status
@@ -60,6 +61,8 @@ Phase 20 deploys side-by-side Docker-backed Foundry hosted agents from the ACR
 image so Foundry runs a prebuilt container instead of source remote_build.
 Phase 21 moves the ACR build source from the local folder to GitHub so the image
 runtime can be rebuilt from a public repo branch, tag, or commit.
+Phase 22 adds a GitHub-triggered ACR Task so pushes create candidate images
+automatically while Foundry promotion remains an explicit manual step.
 ```
 
 ## Phase Intent
@@ -168,3 +171,9 @@ Phase 21: GitHub Source to ACR Image Build
 Move the image-build input from the local checked-out folder to the GitHub repo:
 edit on Mac, commit/push to GitHub, let ACR build from the GitHub ref, and point
 Foundry at that image tag or digest.
+
+Phase 22: Automated Build Trigger with Manual Foundry Promotion
+
+Create an ACR Task wired to the GitHub repo. A push to `main` automatically
+builds candidate image tags, but Docker-backed Foundry hosted agents change only
+when the operator runs the manual promotion command.
