@@ -27,6 +27,44 @@ No local Docker engine is required.
 runs/phase21_github_acr_image_build.json
 ```
 
+## Observed Result
+
+```text
+Status:
+  complete
+
+GitHub source:
+  https://github.com/pravkuma2003/Azure-foundary-maze.git#main:hosted/phase13-split-role-agents
+
+GitHub commit built:
+  91dd86066c5d1198874fe16f7ae3de5561843fa3
+
+ACR build run:
+  ch2
+
+ACR image:
+  mazefoundryacrpravada483.azurecr.io/maze-role-agent:phase21-github-main
+
+Image digest:
+  sha256:28ea9ecf8dd6999c2c57d99ef8bc3dec9be2207a174bcab764de352e427c7618
+
+Foundry Docker-backed agents:
+  maze-analyst-agent-docker     version 2 active
+  maze-worker-agent-a-docker    version 2 active
+  maze-worker-agent-b-docker    version 2 active
+```
+
+All three Docker-backed hosted agents report:
+
+```text
+definition.container_configuration.image =
+  mazefoundryacrpravada483.azurecr.io/maze-role-agent:phase21-github-main
+```
+
+The post-deploy invoke test against `maze-analyst-agent-docker` completed
+successfully and returned dynamic mission-design JSON with one Foundry model
+call.
+
 ## Notes
 
 The GitHub source URL is public in this lab:
