@@ -15,7 +15,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-HOSTED_ROOT = PROJECT_ROOT / "hosted" / "phase13-split-role-agents"
+HOSTED_ROOT = PROJECT_ROOT / "hosted" / "maze-role-agents"
 TOOL_ROOT = PROJECT_ROOT / "tools" / "phase10-maze-tool-function"
 WEBUI_ROOT = PROJECT_ROOT / "webui" / "phase8-azure-webui"
 TOOLBOX_DIR = PROJECT_ROOT / "tools" / "phase11-foundry-toolbox"
@@ -287,7 +287,7 @@ def build_report(apply: bool) -> dict[str, Any]:
     tool_package = zip_dir(TOOL_ROOT, TOOL_ZIP)
     webui_package = zip_dir(WEBUI_ROOT, WEBUI_ZIP)
     compile_tool = run_command(["python3", "-m", "py_compile", "tools/phase10-maze-tool-function/maze_common.py"], timeout=120)
-    compile_hosted = run_command(["python3", "-m", "py_compile", "hosted/phase13-split-role-agents/main.py", "hosted/phase13-split-role-agents/src/maze_tool_boundary.py"], timeout=120)
+    compile_hosted = run_command(["python3", "-m", "py_compile", "hosted/maze-role-agents/main.py", "hosted/maze-role-agents/src/maze_tool_boundary.py"], timeout=120)
     compile_webui = run_command(["python3", "-m", "py_compile", "webui/phase8-azure-webui/function_app.py"], timeout=120)
     deploy_tool = deploy_zip(TOOL_FUNCTION_APP, TOOL_ZIP, apply)
     openapi_spec, openapi_validation = fetch_openapi() if deploy_tool.get("status") in {"deployed", "planned"} else ({}, {"status_code": 0, "error": "blocked by tool deploy"})

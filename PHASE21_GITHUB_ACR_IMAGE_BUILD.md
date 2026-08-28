@@ -73,7 +73,7 @@ mazefoundryacrpravada483.azurecr.io/maze-role-agent:phase21-github-main
 from this GitHub context:
 
 ```text
-https://github.com/pravkuma2003/Azure-foundary-maze.git#main:hosted/phase13-split-role-agents
+https://github.com/pravkuma2003/Azure-foundary-maze.git#main:hosted/maze-role-agents
 ```
 
 The context subfolder is important because the Dockerfile expects:

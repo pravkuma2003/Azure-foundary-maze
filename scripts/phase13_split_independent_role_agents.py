@@ -12,7 +12,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-HOSTED_ROOT = PROJECT_ROOT / "hosted" / "phase13-split-role-agents"
+HOSTED_ROOT = PROJECT_ROOT / "hosted" / "maze-role-agents"
 RUNS_DIR = PROJECT_ROOT / "runs"
 VISUALS_DIR = PROJECT_ROOT / "visuals"
 PROGRESS_PATH = PROJECT_ROOT / "PROGRESS.html"

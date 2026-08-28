@@ -26,7 +26,7 @@ This phase uses Azure to build the image. Local Docker Desktop is not required.
 
 ```text
 Mac/Git working tree
-  -> hosted/phase13-split-role-agents/Dockerfile
+  -> hosted/maze-role-agents/Dockerfile
   -> az acr build
   -> Azure Container Registry image
   -> later Foundry hosted-agent image runtime
@@ -75,8 +75,8 @@ CI/CD artifact promotion
 Added:
 
 ```text
-hosted/phase13-split-role-agents/Dockerfile
-hosted/phase13-split-role-agents/.dockerignore
+hosted/maze-role-agents/Dockerfile
+hosted/maze-role-agents/.dockerignore
 scripts/phase19_docker_packaging_boundary.py
 ```
 

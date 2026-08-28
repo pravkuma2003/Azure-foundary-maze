@@ -1,6 +1,6 @@
-name: phase13-split-role-agents
+name: maze-role-agents
 metadata:
-  template: phase13-split-role-agents@0.1.0
+  template: maze-role-agents@0.1.0
 services:
   maze-migration-lab:
     host: azure.ai.project

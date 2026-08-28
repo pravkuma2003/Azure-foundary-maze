@@ -8,7 +8,7 @@ services:
     endpoint: ${FOUNDRY_PROJECT_ENDPOINT}
 
   maze-analyst-agent-docker:
-    project: ../phase13-split-role-agents
+    project: ../maze-role-agents
     host: azure.ai.agent
     language: docker
     uses:
@@ -32,7 +32,7 @@ services:
     startupCommand: python main.py --provider foundry --role analyst
 
   maze-worker-agent-a-docker:
-    project: ../phase13-split-role-agents
+    project: ../maze-role-agents
     host: azure.ai.agent
     language: docker
     uses:
@@ -56,7 +56,7 @@ services:
     startupCommand: python main.py --provider foundry --role worker_a
 
   maze-worker-agent-b-docker:
-    project: ../phase13-split-role-agents
+    project: ../maze-role-agents
     host: azure.ai.agent
     language: docker
     uses:

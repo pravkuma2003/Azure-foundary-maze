@@ -150,7 +150,7 @@ Copilot may modify:
 
 ```text
 .env.customer-nonprod or equivalent untracked environment file
-hosted/phase13-split-role-agents/azure.yaml environment substitutions
+hosted/maze-role-agents/azure.yaml environment substitutions
 toolbox target URL
 deployment helper scripts
 customer non-prod configuration files
@@ -287,7 +287,7 @@ Telemetry: Application Insights connected to Log Analytics
 The currently relevant source folders are:
 
 ```text
-hosted/phase13-split-role-agents/
+hosted/maze-role-agents/
 webui/phase8-azure-webui/
 tools/phase10-maze-tool-function/
 tools/phase11-foundry-toolbox/
@@ -467,7 +467,7 @@ az monitor log-analytics workspace show \
 Capture hosted-agent definitions and endpoints:
 
 ```bash
-cd hosted/phase13-split-role-agents
+cd hosted/maze-role-agents
 
 azd ai agent show maze-analyst-agent --output json \
   > ../../.deployment-baseline/personal/maze-analyst-agent.json
@@ -686,7 +686,7 @@ Customer-facing source shape:
 repo root
   README.md
   CUSTOMER_NONPROD_AZURE_DEPLOYMENT_RUNBOOK.md
-  hosted/phase13-split-role-agents/
+  hosted/maze-role-agents/
   webui/phase8-azure-webui/
   tools/phase10-maze-tool-function/
   tools/phase11-foundry-toolbox/
@@ -732,30 +732,30 @@ Active runtime source:
 
 ```text
 Analyst hosted agent:
-  package: hosted/phase13-split-role-agents/
+  package: hosted/maze-role-agents/
   entrypoint: main.py
   startup: python main.py --provider foundry --role analyst
   runtime: python_3_13
-  requirements: hosted/phase13-split-role-agents/requirements.txt
+  requirements: hosted/maze-role-agents/requirements.txt
 
 Worker Agent A:
-  package: hosted/phase13-split-role-agents/
+  package: hosted/maze-role-agents/
   entrypoint: main.py
   startup: python main.py --provider foundry --role worker_a
   runtime: python_3_13
-  requirements: hosted/phase13-split-role-agents/requirements.txt
+  requirements: hosted/maze-role-agents/requirements.txt
 
 Worker Agent B:
-  package: hosted/phase13-split-role-agents/
+  package: hosted/maze-role-agents/
   entrypoint: main.py
   startup: python main.py --provider foundry --role worker_b
   runtime: python_3_13
-  requirements: hosted/phase13-split-role-agents/requirements.txt
+  requirements: hosted/maze-role-agents/requirements.txt
 
 Shared agent modules:
-  hosted/phase13-split-role-agents/src/provider_config.py
-  hosted/phase13-split-role-agents/src/maze_tool_boundary.py
-  hosted/phase13-split-role-agents/src/reasoning_curriculum.py
+  hosted/maze-role-agents/src/provider_config.py
+  hosted/maze-role-agents/src/maze_tool_boundary.py
+  hosted/maze-role-agents/src/reasoning_curriculum.py
 
 Maze Tool Function:
   package: tools/phase10-maze-tool-function/
@@ -777,7 +777,7 @@ hosted agents.
 Dependency files:
 
 ```text
-hosted/phase13-split-role-agents/requirements.txt
+hosted/maze-role-agents/requirements.txt
 webui/phase8-azure-webui/requirements.txt
 tools/phase10-maze-tool-function/requirements.txt
 requirements-phase6.txt
@@ -788,9 +788,9 @@ Customer package completeness check:
 ```bash
 test -f README.md
 test -f CUSTOMER_NONPROD_AZURE_DEPLOYMENT_RUNBOOK.md
-test -f hosted/phase13-split-role-agents/main.py
-test -f hosted/phase13-split-role-agents/azure.yaml
-test -f hosted/phase13-split-role-agents/requirements.txt
+test -f hosted/maze-role-agents/main.py
+test -f hosted/maze-role-agents/azure.yaml
+test -f hosted/maze-role-agents/requirements.txt
 test -f webui/phase8-azure-webui/function_app.py
 test -f webui/phase8-azure-webui/static/index.html
 test -f webui/phase8-azure-webui/requirements.txt
@@ -1436,7 +1436,7 @@ azd ai toolbox show "$TOOLBOX_NAME" \
 Source folder:
 
 ```text
-hosted/phase13-split-role-agents/
+hosted/maze-role-agents/
 ```
 
 The deployed role agents should be:
@@ -1448,7 +1448,7 @@ maze-worker-agent-b
 ```
 
 The deployment package must contain a complete customer-ready `azure.yaml`.
-The current repo has `hosted/phase13-split-role-agents/azure.yaml`, but it still
+The current repo has `hosted/maze-role-agents/azure.yaml`, but it still
 contains Personal endpoint values. Before customer deployment, replace it
 with this parameterized version or make equivalent changes:
 
@@ -1554,7 +1554,7 @@ startup roles.
 Deploy:
 
 ```bash
-cd hosted/phase13-split-role-agents
+cd hosted/maze-role-agents
 
 azd env new customer-nonprod
 azd env set FOUNDRY_PROJECT_ENDPOINT "$FOUNDRY_PROJECT_ENDPOINT"
@@ -2207,7 +2207,7 @@ scripts/phase13_split_independent_role_agents.py
 scripts/phase14_azure_durable_team_memory.py
 scripts/phase15_monitoring_consolidation.py
 scripts/phase16_dynamic_mission_design.py
-hosted/phase13-split-role-agents/azure.yaml
+hosted/maze-role-agents/azure.yaml
 ```
 
 For customer deployment, do not globally search-and-replace personal values in a

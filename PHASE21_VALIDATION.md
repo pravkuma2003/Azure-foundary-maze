@@ -34,7 +34,7 @@ Status:
   complete
 
 GitHub source:
-  https://github.com/pravkuma2003/Azure-foundary-maze.git#main:hosted/phase13-split-role-agents
+  https://github.com/pravkuma2003/Azure-foundary-maze.git#main:hosted/maze-role-agents
 
 GitHub commit built:
   91dd86066c5d1198874fe16f7ae3de5561843fa3
@@ -70,8 +70,12 @@ call.
 The GitHub source URL is public in this lab:
 
 ```text
-https://github.com/pravkuma2003/Azure-foundary-maze.git#main:hosted/phase13-split-role-agents
+https://github.com/pravkuma2003/Azure-foundary-maze.git#main:hosted/maze-role-agents
 ```
 
 For a customer non-prod Azure tenant, prefer a customer-approved branch, tag, or
 commit SHA so the image build can be tied to an immutable source reference.
+
+The hosted role-agent package now lives under `hosted/maze-role-agents`. It was
+renamed from the original phase-numbered folder so future GitHub build URLs do
+not imply that the current app runtime is still tied to Phase 13.

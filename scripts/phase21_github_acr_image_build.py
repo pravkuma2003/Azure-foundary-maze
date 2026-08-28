@@ -21,7 +21,7 @@ IMAGE_REPOSITORY = os.environ.get("PHASE21_IMAGE_REPOSITORY") or "maze-role-agen
 IMAGE_TAG = os.environ.get("PHASE21_IMAGE_TAG") or "phase21-github-main"
 GITHUB_REPO_URL = os.environ.get("PHASE21_GITHUB_REPO_URL") or "https://github.com/pravkuma2003/Azure-foundary-maze.git"
 GITHUB_REF = os.environ.get("PHASE21_GITHUB_REF") or "main"
-GITHUB_CONTEXT_SUBDIR = os.environ.get("PHASE21_GITHUB_CONTEXT_SUBDIR") or "hosted/phase13-split-role-agents"
+GITHUB_CONTEXT_SUBDIR = os.environ.get("PHASE21_GITHUB_CONTEXT_SUBDIR") or "hosted/maze-role-agents"
 ROLE_AGENTS = ["maze-analyst-agent-docker", "maze-worker-agent-a-docker", "maze-worker-agent-b-docker"]
 
 

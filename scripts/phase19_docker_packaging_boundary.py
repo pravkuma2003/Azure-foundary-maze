@@ -12,7 +12,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-HOSTED_ROOT = PROJECT_ROOT / "hosted" / "phase13-split-role-agents"
+HOSTED_ROOT = PROJECT_ROOT / "hosted" / "maze-role-agents"
 RUNS_DIR = PROJECT_ROOT / "runs"
 
 RESOURCE_GROUP = os.environ.get("AZURE_RESOURCE_GROUP") or os.environ.get("LAB_RESOURCE_GROUP") or "rg-maze-foundry-lab"
