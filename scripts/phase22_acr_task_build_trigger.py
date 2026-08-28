@@ -219,6 +219,21 @@ def deploy_docker_agents(apply: bool) -> dict[str, Any]:
     return deployments
 
 
+def phase_status(args: argparse.Namespace, task: dict[str, Any], run_once: dict[str, Any], promotion_image: str | None, deployments: dict[str, Any]) -> str:
+    if not args.apply and not args.promote_latest_run:
+        return "planned"
+    if args.apply and task.get("status") != "ready":
+        return "action_required"
+    if args.run_once and run_once.get("status") != "complete":
+        return "action_required"
+    if args.promote_latest_run:
+        if not promotion_image:
+            return "action_required"
+        if any(details.get("status") != "deployed" for details in deployments.values()):
+            return "action_required"
+    return "complete"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Phase 22: create a GitHub-triggered ACR build task and keep Foundry promotion manual.")
     parser.add_argument("--apply", action="store_true", help="Create or update the ACR task.")
@@ -244,11 +259,12 @@ def main() -> int:
     env = configure_foundry_image(promotion_image or "", args.promote_latest_run and bool(promotion_image))
     deployments = deploy_docker_agents(args.promote_latest_run and bool(promotion_image))
     task_show_after = run_command(["az", "acr", "task", "show", "--registry", ACR_NAME, "--name", TASK_NAME, "--output", "json"], timeout=180)
+    status = phase_status(args, task, run_once, promotion_image, deployments)
 
     result = {
         "phase": 22,
         "concept": "Automated Build Trigger with Manual Foundry Promotion",
-        "status": "complete" if args.apply and task.get("status") == "ready" else ("planned" if not args.apply else "action_required"),
+        "status": status,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "github_context": github_context(),
         "acr_task_name": TASK_NAME,
@@ -272,7 +288,7 @@ def main() -> int:
     }
     output_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))
-    return 0 if result["status"] in {"complete", "planned"} else 1
+    return 0 if status in {"complete", "planned"} else 1
 
 
 if __name__ == "__main__":
