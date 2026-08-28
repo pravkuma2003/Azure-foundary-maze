@@ -189,7 +189,7 @@ repo root
 Customer clone command:
 
 ```bash
-git clone <standalone-maze-migration-repo-url> maze-foundry-customer-nonprod
+git clone https://github.com/pravkuma2003/Azure-foundary-maze.git maze-foundry-customer-nonprod
 cd maze-foundry-customer-nonprod
 ```
 
