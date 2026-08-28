@@ -1,0 +1,15 @@
+.azure/
+.git/
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+appPackage.zip
+.appPackage.zip.azd-generated
+agent.yaml
+agent.manifest.yaml
+*.md
+scripts/

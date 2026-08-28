@@ -40,17 +40,20 @@ Phase 11  Foundry-Registered Maze Tool
 Phase 12  PydanticAI Runtime Uses Foundry Toolbox MCP
 Phase 13  Independent Foundry-Hosted Role Agents
 Phase 14  Azure Durable Team Memory
-Phase 15  Trace, Evaluation, and Cost Accounting
-Phase 16  Portability Review and Cleanup
+Phase 15  Monitoring Consolidation
+Phase 16  Dynamic Mission Design
+Phase 17  Parallel Worker Step Execution
+Phase 18  Human Feedback Telemetry
+Phase 19  Docker Packaging Boundary
 ```
 
 ## Current Status
 
 ```text
-Deployment complete through Phase 13.
-Phase 12 routes Worker Maze Tool calls through the Foundry toolbox MCP endpoint.
-Phase 13 splits Analyst, Worker A, and Worker B into independent Foundry-hosted
-role agents while keeping Team Memory request-scoped.
+Deployment complete through Phase 18.
+Phase 18 records per-worker thumbs feedback in Application Insights and durable
+Team Memory. Phase 19 introduces Docker packaging through Azure Container
+Registry remote build without changing agent behavior.
 ```
 
 ## Phase Intent
@@ -122,10 +125,28 @@ Phase 14: Azure Durable Team Memory
 
 Move Team Memory from request-scoped JSON to a low-cost Azure durable store.
 
-Phase 15: Trace, Evaluation, and Cost Accounting
+Phase 15: Monitoring Consolidation
 
-Compare local traces, Foundry traces, latency, and model-call counts.
+Use one shared Application Insights component and Log Analytics workspace for
+the Maze WebUI and Maze Tool Function Apps.
 
-Phase 16: Portability Review and Cleanup
+Phase 16: Dynamic Mission Design
 
-Document what stayed portable, what changed, and what should be abstracted.
+Have the Analyst generate fresh Maze A and Maze B layouts before Worker
+execution. Workers reason only after the learner clicks Play.
+
+Phase 17: Parallel Worker Step Execution
+
+Run Worker Agent A and Worker Agent B in parallel ticks with independent
+per-worker call limits and partial-failure isolation.
+
+Phase 18: Human Feedback Telemetry
+
+Capture simple thumbs-up/thumbs-down feedback per maze and store it in
+Application Insights plus durable Team Memory.
+
+Phase 19: Docker Packaging Boundary
+
+Build the same hosted-agent Python code as an Azure Container Registry image
+using Azure remote build. Local Docker is not required, and agent behavior does
+not change.

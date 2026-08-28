@@ -1,0 +1,80 @@
+name: phase19-docker-packaged-role-agents
+metadata:
+  template: phase19-docker-packaged-role-agents@0.1.0
+
+services:
+  maze-migration-lab:
+    host: azure.ai.project
+    endpoint: ${FOUNDRY_PROJECT_ENDPOINT}
+
+  maze-analyst-agent-docker:
+    project: ../phase13-split-role-agents
+    host: azure.ai.agent
+    language: docker
+    uses:
+      - maze-migration-lab
+    image: ${PHASE19_AGENT_IMAGE}
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${FOUNDRY_MODEL_DEPLOYMENT}
+      FOUNDRY_MODEL_DEPLOYMENT: ${FOUNDRY_MODEL_DEPLOYMENT}
+      MAZE_PROVIDER: foundry
+      MAZE_HOSTED_ROLE: analyst
+      MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+    container:
+      resources:
+        cpu: "0.5"
+        memory: "1Gi"
+    kind: hosted
+    name: maze-analyst-agent-docker
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    startupCommand: python main.py --provider foundry --role analyst
+
+  maze-worker-agent-a-docker:
+    project: ../phase13-split-role-agents
+    host: azure.ai.agent
+    language: docker
+    uses:
+      - maze-migration-lab
+    image: ${PHASE19_AGENT_IMAGE}
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${FOUNDRY_MODEL_DEPLOYMENT}
+      FOUNDRY_MODEL_DEPLOYMENT: ${FOUNDRY_MODEL_DEPLOYMENT}
+      MAZE_PROVIDER: foundry
+      MAZE_HOSTED_ROLE: worker_a
+      MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+    container:
+      resources:
+        cpu: "0.5"
+        memory: "1Gi"
+    kind: hosted
+    name: maze-worker-agent-a-docker
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    startupCommand: python main.py --provider foundry --role worker_a
+
+  maze-worker-agent-b-docker:
+    project: ../phase13-split-role-agents
+    host: azure.ai.agent
+    language: docker
+    uses:
+      - maze-migration-lab
+    image: ${PHASE19_AGENT_IMAGE}
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${FOUNDRY_MODEL_DEPLOYMENT}
+      FOUNDRY_MODEL_DEPLOYMENT: ${FOUNDRY_MODEL_DEPLOYMENT}
+      MAZE_PROVIDER: foundry
+      MAZE_HOSTED_ROLE: worker_b
+      MAZE_TOOL_MCP_ENDPOINT: ${MAZE_TOOL_MCP_ENDPOINT}
+    container:
+      resources:
+        cpu: "0.5"
+        memory: "1Gi"
+    kind: hosted
+    name: maze-worker-agent-b-docker
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    startupCommand: python main.py --provider foundry --role worker_b

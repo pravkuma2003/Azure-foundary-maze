@@ -24,8 +24,8 @@ change.
 ## Current Status
 
 ```text
-Status: Azure-hosted WebUI deployed through Phase 9
-Active phase: Phase 9 - Maze Tool Boundary without New Azure Service
+Status: Azure-native split-agent WebUI deployed through Phase 18
+Active phase: Phase 19 - Docker Packaging Boundary
 Source app: ../multi-agent-reasoning-from-scratch
 Target platform: Microsoft Foundry
 Primary tooling: Foundry Toolkit, Azure Developer CLI, Foundry-hosted agents
@@ -88,6 +88,7 @@ python3 -m venv .venv-phase6
 python3 scripts/phase7_monolithic_hosted_runtime.py
 python3 scripts/phase8_azure_webui_adapter.py --deploy
 python3 scripts/phase9_maze_tool_boundary.py
+python3 scripts/phase19_docker_packaging_boundary.py
 open PROGRESS.html
 ```
 
