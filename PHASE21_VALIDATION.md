@@ -36,17 +36,17 @@ Status:
 GitHub source:
   https://github.com/pravkuma2003/Azure-foundary-maze.git#main:hosted/maze-role-agents
 
-GitHub commit built:
-  91dd86066c5d1198874fe16f7ae3de5561843fa3
+GitHub commit built after stable folder rename:
+  f79ab1563d74f17e238a509123fb38a8b80ac1d0
 
 ACR build run:
-  ch2
+  ch3
 
 ACR image:
   mazefoundryacrpravada483.azurecr.io/maze-role-agent:phase21-github-main
 
 Image digest:
-  sha256:28ea9ecf8dd6999c2c57d99ef8bc3dec9be2207a174bcab764de352e427c7618
+  sha256:f4f0bcd66054950fb0bde455fb5143f1fc1d807babaf2b5422a2a790b7a2a642
 
 Foundry Docker-backed agents:
   maze-analyst-agent-docker     version 2 active
