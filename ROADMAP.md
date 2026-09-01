@@ -72,7 +72,8 @@ Phase 23 adds and validates a gate before promotion. ACR candidate image
 Worker B, then the Docker-backed Foundry agents were promoted to version 4 from
 that validated image.
 Phase 24 adds a fourth Docker-backed Reviewer Agent that evaluates completed
-runs from Team Memory and human feedback without controlling retries.
+runs from Team Memory and human feedback without controlling retries. It is
+deployed from validated image `maze-role-agent:phase22-chh`.
 ```
 
 ## Phase Intent

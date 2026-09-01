@@ -24,7 +24,7 @@ change.
 ## Current Status
 
 ```text
-Status: Azure-native split-agent WebUI deployed through Phase 18; Phase 24 post-run evaluation agent in progress
+Status: Azure-native split-agent WebUI deployed through Phase 24
 Active phase: Phase 24 - Reviewer Agent scores completed runs from Team Memory and human feedback
 Source app: ../multi-agent-reasoning-from-scratch
 Target platform: Microsoft Foundry
