@@ -76,3 +76,54 @@ traces
 [ ] App Insights receives MazeReviewGate log records
 [ ] No Worker retry is automatically triggered
 ```
+
+## Current Lab Result
+
+Phase 25 was deployed in the Visual Studio Enterprise Subscription on
+2026-09-01.
+
+```text
+Commit:
+  265071d Add phase 25 review gate
+
+WebUI package:
+  runs/phase25_webui.zip
+
+WebUI:
+  https://maze-webui-func-prav-ada483.azurewebsites.net/
+```
+
+Validation completed:
+
+```text
+Python compile:
+  passed
+
+Extracted browser JavaScript syntax:
+  passed
+
+WebUI health:
+  {"status":"ok"}
+
+Live HTML check:
+  Accept Review button present
+  Request Retry Planning button present
+  /api/review-decision call present
+```
+
+API-level gate validation used a synthetic run id:
+
+```text
+POST /api/review-decision
+run_id: phase25-validation
+decision: accepted
+
+Result:
+  source: maze-review-gate
+  status: recorded
+  event_name: MazeReviewGate
+  team_memory_persisted: true
+  phase: 25
+  workflow_stage: review_gate_recorded
+  llm calls: 0
+```
