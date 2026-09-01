@@ -36,6 +36,10 @@ ROLE_ALIASES = {
     "worker_b": "worker_b",
     "worker-agent-b": "worker_b",
     "maze-worker-agent-b": "worker_b",
+    "reviewer": "reviewer",
+    "reviewer_agent": "reviewer",
+    "worker-reviewer": "reviewer",
+    "maze-reviewer-agent": "reviewer",
 }
 
 
@@ -43,7 +47,7 @@ def normalize_role(role: str | None) -> str:
     selected = (role or os.environ.get("MAZE_HOSTED_ROLE") or "analyst").strip().lower()
     normalized = ROLE_ALIASES.get(selected)
     if not normalized:
-        raise ValueError(f"unknown MAZE_HOSTED_ROLE={selected!r}; expected analyst, worker_a, or worker_b")
+        raise ValueError(f"unknown MAZE_HOSTED_ROLE={selected!r}; expected analyst, worker_a, worker_b, or reviewer")
     return normalized
 
 
@@ -617,6 +621,183 @@ def run_dynamic_worker_move_decisions(
     return decisions, position, position == goal, invalid_moves, outcome, visited, path_stack, dead_ends, guardrail_corrections
 
 
+def reviewer_findings(team_memory: dict[str, Any]) -> dict[str, Any]:
+    worker_a = team_memory.get("_role.worker_a") if isinstance(team_memory.get("_role.worker_a"), dict) else {}
+    worker_b = team_memory.get("_role.worker_b") if isinstance(team_memory.get("_role.worker_b"), dict) else {}
+    feedback = team_memory.get("feedback.events")
+    feedback_events = feedback if isinstance(feedback, list) else []
+    worker_summaries = {
+        "Worker Agent A": ((worker_a.get("summary") or (worker_a.get("result") or {}).get("summary") or {}) if isinstance(worker_a, dict) else {}),
+        "Worker Agent B": ((worker_b.get("summary") or (worker_b.get("result") or {}).get("summary") or {}) if isinstance(worker_b, dict) else {}),
+    }
+    findings: list[dict[str, Any]] = []
+    score = 100
+    for worker_name, summary in worker_summaries.items():
+        outcome = str(summary.get("outcome") or "unknown")
+        if outcome != "goal_reached":
+            score -= 20
+            findings.append(
+                {
+                    "target": worker_name,
+                    "category": "completion",
+                    "severity": "high",
+                    "issue": f"{worker_name} outcome is {outcome}.",
+                    "recommendation": "Review local maze state, dead-end reporting, and Worker route-reasoning prompt.",
+                }
+            )
+        corrections = int(summary.get("guardrail_corrections") or 0)
+        if corrections:
+            score -= min(15, corrections * 3)
+            findings.append(
+                {
+                    "target": worker_name,
+                    "category": "loop_guard",
+                    "severity": "medium",
+                    "issue": f"{worker_name} needed {corrections} guardrail correction(s).",
+                    "recommendation": "Strengthen visited-cell and backtracking instructions before the next run.",
+                }
+            )
+        calls = int(summary.get("llm_calls") or 0)
+        if calls >= 50:
+            score -= 10
+            findings.append(
+                {
+                    "target": worker_name,
+                    "category": "cost",
+                    "severity": "medium",
+                    "issue": f"{worker_name} consumed its 50-call budget.",
+                    "recommendation": "Reduce per-step retries or add stronger stuck detection.",
+                }
+            )
+    for item in feedback_events:
+        if isinstance(item, dict) and item.get("rating") == "down":
+            score -= 8
+            findings.append(
+                {
+                    "target": item.get("worker") or item.get("maze_label") or "Worker",
+                    "category": "human_feedback",
+                    "severity": "medium",
+                    "issue": f"Human feedback marked {item.get('maze_label') or item.get('maze_id')} thumbs down.",
+                    "recommendation": item.get("note") or "Review the trace segment that triggered the human feedback.",
+                }
+            )
+    score = max(0, min(100, score))
+    if not findings:
+        findings.append(
+            {
+                "target": "Team",
+                "category": "quality",
+                "severity": "info",
+                "issue": "No major completion, loop, budget, or negative-feedback issue was detected.",
+                "recommendation": "Accept the run or move to deeper quality scoring in a later phase.",
+            }
+        )
+    return {
+        "score": score,
+        "status": "approved_for_learning_review" if score >= 90 else "needs_review",
+        "threshold": 90,
+        "findings": findings,
+        "retry_target": "none" if score >= 90 else findings[0]["target"],
+        "human_gate": "ready_for_human_review" if score >= 90 else "request_changes_recommended",
+        "feedback_count": len(feedback_events),
+    }
+
+
+def run_reviewer_agent(provider: str, provider_config: Any | None, team_memory: dict[str, Any]) -> dict[str, Any]:
+    baseline = reviewer_findings(team_memory)
+    if provider == "test":
+        return {
+            "agent": "Reviewer Agent v1",
+            "overall_result": baseline["status"],
+            "score": baseline["score"],
+            "threshold": baseline["threshold"],
+            "findings": baseline["findings"],
+            "retry_target": baseline["retry_target"],
+            "human_gate": baseline["human_gate"],
+            "review_summary": "Reviewer evaluated the completed run from Team Memory without controlling execution.",
+            "llm_call_count": 0,
+        }
+
+    try:
+        from pydantic import BaseModel, Field
+        from pydantic_ai import Agent, PromptedOutput
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+        from pydantic_ai.usage import UsageLimits
+    except Exception as exc:
+        raise RuntimeError("Pydantic AI is not installed in the hosted role-agent package.") from exc
+
+    class ReviewFinding(BaseModel):
+        target: str = Field(description="Worker Agent A, Worker Agent B, Analyst Agent, Team Memory, or Team.")
+        category: str = Field(description="completion, route_quality, loop_guard, cost, memory, human_feedback, or quality.")
+        severity: str = Field(description="info, low, medium, high, or critical.")
+        issue: str = Field(description="Short concrete issue observed in the trace.")
+        recommendation: str = Field(description="One actionable recommendation.")
+
+    class ReviewOutput(BaseModel):
+        overall_result: str = Field(description="approved_for_learning_review or needs_review.")
+        score: int = Field(ge=0, le=100)
+        threshold: int = Field(ge=0, le=100)
+        findings: list[ReviewFinding] = Field(description="One to five review findings.")
+        retry_target: str = Field(description="none, Analyst Agent, Worker Agent A, Worker Agent B, or Team Memory.")
+        human_gate: str = Field(description="ready_for_human_review or request_changes_recommended.")
+        review_summary: str = Field(description="Two sentence summary of the run quality.")
+
+    assert provider_config is not None
+    pydantic_model = OpenAIChatModel(
+        provider_config.model,
+        provider=OpenAIProvider(base_url=provider_config.base_url, api_key=provider_config.api_key),
+    )
+    agent = Agent(
+        pydantic_model,
+        output_type=PromptedOutput(ReviewOutput),
+        instructions=(
+            "You are the Reviewer Agent for a multi-agent Maze lab. "
+            "Evaluate completed execution after Analyst and Workers have acted. "
+            "Do not choose moves, do not revise prompts, and do not approve deployment. "
+            "Return structured quality review only."
+        ),
+    )
+    worker_a_payload = team_memory.get("_role.worker_a") if isinstance(team_memory.get("_role.worker_a"), dict) else {}
+    worker_b_payload = team_memory.get("_role.worker_b") if isinstance(team_memory.get("_role.worker_b"), dict) else {}
+    compact_memory = {
+        "worker_a_summary": ((worker_a_payload.get("summary") or (worker_a_payload.get("result") or {}).get("summary") or {}) if isinstance(worker_a_payload, dict) else {}),
+        "worker_b_summary": ((worker_b_payload.get("summary") or (worker_b_payload.get("result") or {}).get("summary") or {}) if isinstance(worker_b_payload, dict) else {}),
+        "worker_a_state": team_memory.get("worker_state.maze_a"),
+        "worker_b_state": team_memory.get("worker_state.maze_b"),
+        "feedback_events": team_memory.get("feedback.events") or [],
+        "baseline_review": baseline,
+    }
+    prompt = f"""
+Review this completed multi-agent Maze run.
+
+Compact Team Memory:
+{json.dumps(compact_memory, indent=2)}
+
+Rules:
+- Score from 0 to 100.
+- Threshold is 90.
+- Penalize incomplete runs, looping/guardrail corrections, budget exhaustion, stale memory, or negative human feedback.
+- Do not recommend a retry unless score is below threshold.
+- Do not claim a route is optimal unless the evidence proves it.
+- Keep findings concise. /no_think
+"""
+    result = agent.run_sync(prompt, usage_limits=UsageLimits(request_limit=3))
+    usage = getattr(result, "usage", None)
+    calls = getattr(usage, "requests", 0)
+    return {
+        "agent": "Reviewer Agent v1",
+        "overall_result": result.output.overall_result,
+        "score": result.output.score,
+        "threshold": result.output.threshold,
+        "findings": [finding.model_dump() for finding in result.output.findings],
+        "retry_target": result.output.retry_target,
+        "human_gate": result.output.human_gate,
+        "review_summary": result.output.review_summary,
+        "llm_call_count": calls if isinstance(calls, int) else 0,
+    }
+
+
 def run_role_agent(*, role: str, provider: str, model: str | None, team_memory: dict[str, Any]) -> dict[str, Any]:
     provider_config = provider_config_for(provider, model)
     if role == "analyst":
@@ -657,6 +838,53 @@ def run_role_agent(*, role: str, provider: str, model: str | None, team_memory: 
                 "maze_tool_calls": 0,
                 "uses_pydantic_ai": True,
                 "owns": "dynamic mission design and global multi-worker assignment",
+            },
+        }
+
+    if role == "reviewer":
+        output = run_reviewer_agent(provider, provider_config, team_memory)
+        shared_writes = [
+            {"key": "review.latest", "value": output},
+            {"key": "review.score", "value": output["score"]},
+            {"key": "review.status", "value": output["overall_result"]},
+            {"key": "review.findings", "value": output["findings"]},
+        ]
+        return {
+            "status": "complete",
+            "phase": 24,
+            "role": "reviewer",
+            "hosted_agent_name": "maze-reviewer-agent",
+            "agent": output["agent"],
+            "output": output,
+            "team_memory_reads": ["_role.analyst", "_role.worker_a", "_role.worker_b", "feedback.events", "worker_state.maze_a", "worker_state.maze_b"],
+            "team_memory_writes": shared_writes,
+            "events": [
+                {
+                    "type": "review",
+                    "actor": "Reviewer Agent",
+                    "target": "Team Memory",
+                    "label": f"score {output['score']} / {output['threshold']}",
+                    "detail": output["review_summary"],
+                    "llm_call_count": output["llm_call_count"],
+                    "review": {
+                        "score": output["score"],
+                        "threshold": output["threshold"],
+                        "status": output["overall_result"],
+                        "findings": output["findings"],
+                        "retry_target": output["retry_target"],
+                        "human_gate": output["human_gate"],
+                    },
+                }
+            ],
+            "summary": {
+                "llm_calls": output["llm_call_count"],
+                "maze_tool_calls": 0,
+                "uses_pydantic_ai": True,
+                "owns": "post-run quality review and recommendation",
+                "review_score": output["score"],
+                "review_threshold": output["threshold"],
+                "review_status": output["overall_result"],
+                "review_findings": len(output["findings"]),
             },
         }
 
@@ -829,10 +1057,12 @@ def invoke(request: dict[str, Any] | str | None = None) -> dict[str, Any]:
     role = normalize_role(payload.get("role"))
     team_memory = payload.get("team_memory") if isinstance(payload.get("team_memory"), dict) else {}
     result = run_role_agent(role=role, provider=provider, model=model, team_memory=team_memory)
+    phase = int(result.get("phase") or 16)
+    concept = "Post-Run Evaluation Agent" if role == "reviewer" else "Dynamic Mission Design"
     return {
         "status": "complete",
-        "phase": 16,
-        "concept": "Dynamic Mission Design",
+        "phase": phase,
+        "concept": concept,
         "role": role,
         "hosted_agent_name": result.get("hosted_agent_name"),
         "result": result,
@@ -893,7 +1123,7 @@ def run_server() -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run one split hosted role-agent package.")
     parser.add_argument("--once", action="store_true", help="Run once as a CLI command instead of starting the hosted-agent server.")
-    parser.add_argument("--role", default=os.environ.get("MAZE_HOSTED_ROLE", "analyst"), choices=["analyst", "worker_a", "worker_b"])
+    parser.add_argument("--role", default=os.environ.get("MAZE_HOSTED_ROLE", "analyst"), choices=["analyst", "worker_a", "worker_b", "reviewer"])
     parser.add_argument("--provider", default=os.environ.get("MAZE_PROVIDER", "foundry"), choices=["test", "local", "foundry"])
     parser.add_argument("--model", default=os.environ.get("FOUNDRY_MODEL_DEPLOYMENT") or os.environ.get("MAZE_MODEL"))
     args = parser.parse_args()

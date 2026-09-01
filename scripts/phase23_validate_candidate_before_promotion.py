@@ -19,7 +19,7 @@ ACR_NAME = os.environ.get("PHASE22_ACR_NAME") or "mazefoundryacrpravada483"
 TASK_NAME = os.environ.get("PHASE22_TASK_NAME") or "maze-role-agent-github-build"
 IMAGE_REPOSITORY = os.environ.get("PHASE22_IMAGE_REPOSITORY") or "maze-role-agent"
 MAX_VALIDATION_SECONDS = int(os.environ.get("PHASE23_MAX_VALIDATION_SECONDS") or "900")
-ROLES = ["analyst", "worker_a", "worker_b"]
+ROLES = ["analyst", "worker_a", "worker_b", "reviewer"]
 
 
 def safe_text(value: str) -> str:

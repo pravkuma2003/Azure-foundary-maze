@@ -51,6 +51,11 @@
     .kv { display:grid; grid-template-columns:120px minmax(0,1fr); gap:8px 10px; font-size:14px; }
     .kv span { color:var(--muted); font-weight:800; }
     .status { border-left:5px solid var(--gold); background:#fff8e7; }
+    .review { margin-top:14px; border-left:5px solid var(--blue); }
+    .review-grid { display:grid; grid-template-columns:130px minmax(0,1fr); gap:8px 12px; margin-top:8px; }
+    .review-grid span { color:var(--muted); font-weight:800; }
+    .finding { border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:8px; background:#fff; }
+    .finding strong { display:block; }
     @media (max-width:1050px) { .layout { grid-template-columns:1fr; } .mazes { grid-template-columns:1fr; } header { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -88,6 +93,10 @@
       <h2>Run Status</h2>
       <p id="status">Click Run Fresh Maze to call the hosted Analyst only. Press Play after the maze appears to run the Workers.</p>
     </section>
+    <section class="panel review" id="reviewPanel" style="display:none">
+      <h2>Reviewer Agent</h2>
+      <div id="reviewContent"></div>
+    </section>
   </main>
   <script>
     let trace = null;
@@ -101,6 +110,8 @@
     const mazesEl = document.getElementById('mazes');
     const timelineEl = document.getElementById('timeline');
     const statusEl = document.getElementById('status');
+    const reviewPanel = document.getElementById('reviewPanel');
+    const reviewContent = document.getElementById('reviewContent');
 
     function escapeHtml(value) {
       return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -148,6 +159,7 @@
       if ((trace.summary || {}).parallel_worker_step_execution) {
         return events.filter(event => {
           if (event.type === 'parallel_tick') return true;
+          if (event.type === 'review') return true;
           if (['state', 'plan', 'assignment', 'result'].includes(event.type) && !(event.actor || '').startsWith('Worker Agent')) return true;
           return false;
         });
@@ -224,7 +236,52 @@
         <span>Worker A calls</span><strong>${workerCallCount(summary, 'worker_a')} / ${workerCallBudget(summary)}</strong>
         <span>Worker B calls</span><strong>${workerCallCount(summary, 'worker_b')} / ${workerCallBudget(summary)}</strong>
         <span>Loop guard</span><strong>${escapeHtml(summary.guardrail_corrections ?? 0)}</strong>
+        <span>Review score</span><strong>${escapeHtml(summary.review_score ?? '-')}</strong>
+        <span>Review status</span><strong>${escapeHtml(summary.review_status ?? '-')}</strong>
         <span>Agents</span><strong>${escapeHtml(summary.reasoning_agents ?? '-')}</strong>
+      `;
+    }
+
+    function latestReview() {
+      const memory = trace?.team_memory || {};
+      const review = memory['review.latest'];
+      if (review && typeof review === 'object') return review;
+      const event = [...(trace?.events || [])].reverse().find(item => item.type === 'review' && item.review);
+      return event ? {
+        score: event.review.score,
+        threshold: event.review.threshold,
+        overall_result: event.review.status,
+        findings: event.review.findings || [],
+        retry_target: event.review.retry_target,
+        human_gate: event.review.human_gate,
+        review_summary: event.detail || ''
+      } : null;
+    }
+
+    function renderReview() {
+      const review = latestReview();
+      if (!review) {
+        reviewPanel.style.display = 'none';
+        reviewContent.innerHTML = '';
+        return;
+      }
+      const findings = Array.isArray(review.findings) ? review.findings : [];
+      reviewPanel.style.display = 'block';
+      reviewContent.innerHTML = `
+        <div class="review-grid">
+          <span>Score</span><strong>${escapeHtml(review.score)} / ${escapeHtml(review.threshold || 90)}</strong>
+          <span>Status</span><strong>${escapeHtml(review.overall_result || review.status || '-')}</strong>
+          <span>Retry target</span><strong>${escapeHtml(review.retry_target || 'none')}</strong>
+          <span>Human gate</span><strong>${escapeHtml(review.human_gate || '-')}</strong>
+        </div>
+        <p style="margin-top:10px">${escapeHtml(review.review_summary || '')}</p>
+        ${findings.map(item => `
+          <article class="finding">
+            <strong>${escapeHtml(item.target || 'Target')} - ${escapeHtml(item.severity || 'info')} - ${escapeHtml(item.category || 'quality')}</strong>
+            <p>${escapeHtml(item.issue || '')}</p>
+            <p>${escapeHtml(item.recommendation || '')}</p>
+          </article>
+        `).join('')}
       `;
     }
 
@@ -336,6 +393,7 @@
       renderState();
       renderMazes();
       renderTimeline();
+      renderReview();
     }
 
     function renderEmptyState() {
@@ -347,6 +405,8 @@
       `;
       mazesEl.innerHTML = '<article class="maze"><h2>No Live Maze Loaded</h2><p>Use Run Fresh Maze to generate a new layout through the Analyst Agent.</p></article>';
       timelineEl.innerHTML = '<article class="event"><strong>Waiting for run</strong><p>No sample trace is loaded by default. Run Fresh Maze creates a new Analyst-generated maze; Play runs the Workers.</p></article>';
+      reviewPanel.style.display = 'none';
+      reviewContent.innerHTML = '';
     }
 
     function startPlayback() {
@@ -497,6 +557,9 @@
         const elapsed = Math.round((Date.now() - started) / 1000);
         const nextSummary = trace.summary || {};
         statusEl.textContent = `Workers stopped after ${elapsed}s. Worker A: ${nextSummary.worker_a_outcome || '-'}. Worker B: ${nextSummary.worker_b_outcome || '-'}.`;
+        if ((nextSummary.workflow_stage || '') === 'workers_complete') {
+          await runReview(runId);
+        }
       } catch (error) {
         const elapsed = Math.round((Date.now() - started) / 1000);
         statusEl.textContent = error.name === 'AbortError'
@@ -507,6 +570,33 @@
         playBtn.disabled = false;
         runBtn.disabled = false;
         playBtn.textContent = 'Play';
+      }
+    }
+
+    async function runReview(runId) {
+      statusEl.textContent = 'Calling Reviewer Agent for post-run evaluation.';
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 120000);
+        const res = await fetch('/api/review', {
+          method:'POST',
+          cache:'no-store',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({run_id:runId}),
+          signal:controller.signal
+        });
+        clearTimeout(timeout);
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'review failed');
+        trace = payload.trace;
+        step = visibleEvents().length - 1;
+        const summary = trace.summary || {};
+        statusEl.textContent = `Reviewer completed: score ${summary.review_score ?? '-'} / ${summary.review_threshold ?? 90}; status ${summary.review_status || '-'}.`;
+        render();
+      } catch (error) {
+        statusEl.textContent = error.name === 'AbortError'
+          ? 'Reviewer timed out. Worker trace remains available.'
+          : `Reviewer failed: ${error.message || error}`;
       }
     }
 

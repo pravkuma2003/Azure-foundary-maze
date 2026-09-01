@@ -31,6 +31,7 @@ Examples of failures a build may miss:
 Analyst role no longer starts
 Worker A role has an import error
 Worker B role returns invalid JSON
+Reviewer role cannot evaluate Team Memory
 shared role image contains stale source
 wrong image tag is about to be promoted
 ```
@@ -48,7 +49,8 @@ The script checks:
 3. Analyst container starts with test provider
 4. Worker A container starts with test provider
 5. Worker B container starts with test provider
-6. each role returns structured JSON with status=complete
+6. Reviewer container starts with test provider
+7. each role returns structured JSON with status=complete
 ```
 
 The smoke tests run inside ACR with:
@@ -57,6 +59,7 @@ The smoke tests run inside ACR with:
 python main.py --once --provider test --role analyst
 python main.py --once --provider test --role worker_a
 python main.py --once --provider test --role worker_b
+python main.py --once --provider test --role reviewer
 ```
 
 This verifies the same image that Foundry would run, without changing the live
@@ -91,6 +94,8 @@ python3 scripts/phase22_acr_task_build_trigger.py --promote-latest-run
 ## Lesson Boundary
 
 Phase 23 validates packaging, role entrypoints, and structured output shape.
+After Phase 24, the same validation gate also includes the Reviewer role
+entrypoint.
 
 It does not yet prove model-quality behavior, route optimality, or WebUI
 end-to-end trace quality. Those belong in a later evaluation phase because they

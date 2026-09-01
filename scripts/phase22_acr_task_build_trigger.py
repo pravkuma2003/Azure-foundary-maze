@@ -22,7 +22,7 @@ IMAGE_REPOSITORY = os.environ.get("PHASE22_IMAGE_REPOSITORY") or "maze-role-agen
 GITHUB_REPO_URL = os.environ.get("PHASE22_GITHUB_REPO_URL") or "https://github.com/pravkuma2003/Azure-foundary-maze.git"
 GITHUB_REF = os.environ.get("PHASE22_GITHUB_REF") or "main"
 GITHUB_CONTEXT_SUBDIR = os.environ.get("PHASE22_GITHUB_CONTEXT_SUBDIR") or "hosted/maze-role-agents"
-ROLE_AGENTS = ["maze-analyst-agent-docker", "maze-worker-agent-a-docker", "maze-worker-agent-b-docker"]
+ROLE_AGENTS = ["maze-analyst-agent-docker", "maze-worker-agent-a-docker", "maze-worker-agent-b-docker", "maze-reviewer-agent-docker"]
 
 
 def safe_text(value: str) -> str:

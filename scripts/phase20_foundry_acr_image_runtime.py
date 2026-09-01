@@ -29,7 +29,7 @@ AI_PROJECT_ID = os.environ.get("AZURE_AI_PROJECT_ID") or (
     f"/subscriptions/{SUBSCRIPTION_ID}/resourceGroups/{RESOURCE_GROUP}/providers/"
     f"Microsoft.CognitiveServices/accounts/{AI_ACCOUNT_NAME}/projects/{AI_PROJECT_NAME}"
 )
-ROLE_AGENTS = ["maze-analyst-agent-docker", "maze-worker-agent-a-docker", "maze-worker-agent-b-docker"]
+ROLE_AGENTS = ["maze-analyst-agent-docker", "maze-worker-agent-a-docker", "maze-worker-agent-b-docker", "maze-reviewer-agent-docker"]
 
 
 def safe_text(value: str) -> str:

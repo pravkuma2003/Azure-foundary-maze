@@ -11,6 +11,7 @@ Validation:
   analyst role smoke test passes
   worker_a role smoke test passes
   worker_b role smoke test passes
+  reviewer role smoke test passes
 
 Promotion:
   allowed only when all validation checks pass
@@ -43,6 +44,7 @@ python3 scripts/phase23_validate_candidate_before_promotion.py --apply --promote
 [ ] Analyst smoke test status is passed
 [ ] Worker A smoke test status is passed
 [ ] Worker B smoke test status is passed
+[ ] Reviewer smoke test status is passed
 [ ] promotion does not run unless validation status is passed
 ```
 

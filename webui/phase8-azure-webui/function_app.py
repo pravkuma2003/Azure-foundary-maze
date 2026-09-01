@@ -639,6 +639,7 @@ def build_split_trace(
     team_memory: dict[str, Any],
     memory_store: TeamMemoryStore,
     memory_events: list[dict[str, Any]],
+    reviewer: dict[str, Any] | None = None,
     workflow_stage: str = "workers_complete",
     phase_override: int | None = None,
     phase_name_override: str | None = None,
@@ -649,29 +650,39 @@ def build_split_trace(
             "type": "state",
             "actor": "Azure WebUI Coordinator",
             "label": "split role run",
-            "detail": f"WebUI called three independent Foundry-hosted role agents and used {memory_store.backend_name} for Team Memory.",
+            "detail": f"WebUI coordinated independent Foundry-hosted role agents and used {memory_store.backend_name} for Team Memory.",
             "llm_call_count": 0,
         }
     ]
     events.extend(memory_events)
-    for payload in (analyst, worker_a, worker_b):
+    base_role_payloads = [analyst, worker_a, worker_b]
+    role_payloads = list(base_role_payloads)
+    if isinstance(reviewer, dict):
+        role_payloads.append(reviewer)
+    for payload in base_role_payloads:
         for event in role_result_events(payload):
             copied = dict(event)
             copied.setdefault("llm_call_count", 0)
             events.append(copied)
     if phase_override is not None and phase_override >= 17:
         events.extend(parallel_tick_events(worker_a, worker_b))
+    if isinstance(reviewer, dict):
+        for event in role_result_events(reviewer):
+            copied = dict(event)
+            copied.setdefault("llm_call_count", 0)
+            events.append(copied)
     for index, event in enumerate(events):
         event["index"] = index
 
-    summaries = [role_summary(payload) for payload in (analyst, worker_a, worker_b)]
+    summaries = [role_summary(payload) for payload in role_payloads]
     worker_a_llm_calls = int(summaries[1].get("llm_calls") or 0)
     worker_b_llm_calls = int(summaries[2].get("llm_calls") or 0)
+    reviewer_summary = role_summary(reviewer) if isinstance(reviewer, dict) else {}
     worker_a_outcome = worker_outcome_with_budget(worker_a, team_memory, "maze_a")
     worker_b_outcome = worker_outcome_with_budget(worker_b, team_memory, "maze_b")
     llm_calls = sum(int(summary.get("llm_calls") or 0) for summary in summaries)
     maze_tool_calls = sum(int(summary.get("maze_tool_calls") or 0) for summary in summaries)
-    role_phases = [int(payload.get("phase") or 0) for payload in (analyst, worker_a, worker_b) if str(payload.get("phase") or "").isdigit()]
+    role_phases = [int(payload.get("phase") or 0) for payload in role_payloads if str(payload.get("phase") or "").isdigit()]
     phase = phase_override or (max(role_phases) if role_phases else 14)
     dynamic_layouts = all(isinstance(team_memory.get(f"maze.{maze_id}.rows"), list) for maze_id in ("maze_a", "maze_b"))
     return {
@@ -684,6 +695,7 @@ def build_split_trace(
             {"name": "maze-analyst-agent", "kind": "independent Foundry-hosted PydanticAI Analyst", "uses_pydantic_ai": True, "owns": "global assignment"},
             {"name": "maze-worker-agent-a", "kind": "independent Foundry-hosted PydanticAI Worker", "uses_pydantic_ai": True, "owns": "Maze A local reasoning"},
             {"name": "maze-worker-agent-b", "kind": "independent Foundry-hosted PydanticAI Worker", "uses_pydantic_ai": True, "owns": "Maze B local reasoning"},
+            {"name": "maze-reviewer-agent", "kind": "independent Foundry-hosted PydanticAI Reviewer", "uses_pydantic_ai": True, "owns": "post-run evaluation", "active": isinstance(reviewer, dict)},
             {"name": "Azure WebUI Coordinator", "kind": "deterministic request coordinator", "uses_pydantic_ai": False, "owns": "durable Team Memory and trace assembly"},
         ],
         "mazes": trace_mazes_from_memory(team_memory),
@@ -702,9 +714,9 @@ def build_split_trace(
             "worker_b_llm_calls": worker_b_llm_calls,
             "worker_a_llm_call_budget_remaining": max(0, WORKER_LLM_CALL_BUDGET - worker_a_llm_calls),
             "worker_b_llm_call_budget_remaining": max(0, WORKER_LLM_CALL_BUDGET - worker_b_llm_calls),
-            "agent_count": 3,
-            "reasoning_agents": 3,
-            "hosted_role_agents": 3,
+            "agent_count": 4 if isinstance(reviewer, dict) else 3,
+            "reasoning_agents": 4 if isinstance(reviewer, dict) else 3,
+            "hosted_role_agents": 4 if isinstance(reviewer, dict) else 3,
             "maze_tool_calls": maze_tool_calls,
             "foundry_toolbox_mcp_calls": maze_tool_calls,
             "direct_http_tool_calls": 0,
@@ -726,6 +738,10 @@ def build_split_trace(
             "worker_invalid_moves": sum(int(summary.get("invalid_moves") or 0) for summary in summaries),
             "worker_side_path_rescue": any(bool(summary.get("worker_side_path_rescue")) for summary in summaries),
             "guardrail_corrections": sum(int(summary.get("guardrail_corrections") or 0) for summary in summaries),
+            "review_score": reviewer_summary.get("review_score"),
+            "review_threshold": reviewer_summary.get("review_threshold"),
+            "review_status": reviewer_summary.get("review_status"),
+            "review_findings": reviewer_summary.get("review_findings"),
             "next_phase": "Use agent quality telemetry to explain outcomes, path quality, memory freshness, and LLM budget.",
         },
     }
@@ -737,6 +753,10 @@ def split_endpoints() -> tuple[str, str, str]:
         os.environ.get("FOUNDRY_WORKER_AGENT_A_ENDPOINT", "").strip(),
         os.environ.get("FOUNDRY_WORKER_AGENT_B_ENDPOINT", "").strip(),
     )
+
+
+def reviewer_endpoint() -> str:
+    return os.environ.get("FOUNDRY_REVIEWER_AGENT_ENDPOINT", "").strip()
 
 
 def call_split_role_agents() -> dict[str, Any]:
@@ -1287,6 +1307,69 @@ def call_parallel_worker_steps_for_mission(run_id: str, roles: list[str]) -> dic
     return trace
 
 
+def call_reviewer_for_mission(run_id: str) -> dict[str, Any]:
+    if not run_id:
+        raise ValueError("run_id is required")
+    analyst_endpoint, worker_a_endpoint, worker_b_endpoint = split_endpoints()
+    review_endpoint = reviewer_endpoint()
+    if not all([analyst_endpoint, worker_a_endpoint, worker_b_endpoint, review_endpoint]):
+        raise RuntimeError("reviewer endpoint or split role agent endpoints are not fully configured")
+
+    memory_store = build_team_memory_store(run_id)
+    base_memory = memory_store.snapshot()
+    analyst = stored_role_payload(base_memory, "_role.analyst", "analyst")
+    worker_a = stored_role_payload(base_memory, "_role.worker_a", "worker_a")
+    worker_b = stored_role_payload(base_memory, "_role.worker_b", "worker_b")
+    outcomes = {
+        "maze_a": worker_outcome_with_budget(worker_a, base_memory, "maze_a"),
+        "maze_b": worker_outcome_with_budget(worker_b, base_memory, "maze_b"),
+    }
+    if not all(outcome in TERMINAL_WORKER_OUTCOMES for outcome in outcomes.values()):
+        raise RuntimeError("Reviewer can run only after both Workers have terminal outcomes")
+
+    reviewer = call_role_agent(review_endpoint, "reviewer", base_memory)
+    grouped_writes = memory_store.write_grouped(
+        [
+            ("maze-reviewer-agent", ((reviewer.get("result") or {}).get("team_memory_writes") or [])),
+            ("Azure WebUI Coordinator", [{"key": "_role.reviewer", "value": reviewer}]),
+        ]
+    )
+    writes = grouped_writes[0]
+    team_memory = memory_store.snapshot()
+    memory_events = [
+        {
+            "type": "assignment",
+            "actor": "Azure WebUI Coordinator",
+            "target": "maze-reviewer-agent",
+            "label": "post-run review",
+            "detail": "Worker execution is terminal. Reviewer Agent evaluates the completed run from Team Memory and feedback telemetry.",
+            "llm_call_count": 0,
+        },
+        {
+            "type": "memory",
+            "actor": "maze-reviewer-agent",
+            "target": "Team Memory",
+            "label": "persist review",
+            "detail": f"Persisted {len(writes)} review records after post-run evaluation.",
+            "memory_scope": "shared",
+            "llm_call_count": 0,
+        },
+    ]
+    return build_split_trace(
+        analyst,
+        worker_a,
+        worker_b,
+        team_memory,
+        memory_store,
+        memory_events,
+        reviewer=reviewer,
+        workflow_stage="review_complete",
+        phase_override=24,
+        phase_name_override="Post-Run Evaluation Agent",
+        concept_override="Agentic Evaluation",
+    )
+
+
 def call_configured_agent_path() -> tuple[str, dict[str, Any]]:
     analyst_endpoint, worker_a_endpoint, worker_b_endpoint = split_endpoints()
     if all([analyst_endpoint, worker_a_endpoint, worker_b_endpoint]):
@@ -1424,6 +1507,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             return json_response({"source": "maze-human-feedback", **record_feedback(payload)})
         except Exception as exc:
             return json_response({"source": "feedback-failed", "error": str(exc)}, status_code=400)
+    if req.method == "POST" and route == "api/review":
+        try:
+            body = req.get_json()
+            run_id = body.get("run_id") if isinstance(body, dict) else ""
+            return json_response({"source": "foundry-reviewer", "trace": call_reviewer_for_mission(str(run_id or ""))})
+        except Exception as exc:
+            return json_response({"source": "review-failed", "error": str(exc)}, status_code=502)
     if req.method == "POST" and route == "api/run":
         try:
             source, trace = call_configured_agent_path()

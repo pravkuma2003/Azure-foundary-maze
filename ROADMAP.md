@@ -49,6 +49,7 @@ Phase 20  Foundry Hosted Agents From ACR Image
 Phase 21  GitHub Source to ACR Image Build
 Phase 22  Automated Build Trigger with Manual Foundry Promotion
 Phase 23  Automated Validation Before Promotion
+Phase 24  Post-Run Evaluation Agent
 ```
 
 ## Current Status
@@ -70,6 +71,8 @@ Phase 23 adds and validates a gate before promotion. ACR candidate image
 `phase22-ch9` passed low-cost container smoke tests for Analyst, Worker A, and
 Worker B, then the Docker-backed Foundry agents were promoted to version 4 from
 that validated image.
+Phase 24 adds a fourth Docker-backed Reviewer Agent that evaluates completed
+runs from Team Memory and human feedback without controlling retries.
 ```
 
 ## Phase Intent
@@ -188,5 +191,12 @@ when the operator runs the manual promotion command.
 Phase 23: Automated Validation Before Promotion
 
 Validate the newest candidate image before promotion. The gate confirms the
-run-specific image tag exists and that Analyst, Worker A, and Worker B all start
-from the container image and return structured JSON in test-provider mode.
+run-specific image tag exists and that Analyst, Worker A, Worker B, and Reviewer
+all start from the container image and return structured JSON in test-provider
+mode.
+
+Phase 24: Post-Run Evaluation Agent
+
+Add a separate Reviewer Agent. It reads completed durable Team Memory and human
+feedback, scores the run, writes review findings, and renders the review in the
+WebUI. It does not move through the maze or trigger retries yet.
