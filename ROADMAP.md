@@ -50,6 +50,7 @@ Phase 21  GitHub Source to ACR Image Build
 Phase 22  Automated Build Trigger with Manual Foundry Promotion
 Phase 23  Automated Validation Before Promotion
 Phase 24  Post-Run Evaluation Agent
+Phase 25  Human Review Gate
 ```
 
 ## Current Status
@@ -74,6 +75,9 @@ that validated image.
 Phase 24 adds a fourth Docker-backed Reviewer Agent that evaluates completed
 runs from Team Memory and human feedback without controlling retries. It is
 deployed from validated image `maze-role-agent:phase22-chh`.
+Phase 25 records a human gate decision against the Reviewer output. The WebUI
+persists accept/retry-planning intent to Team Memory and App Insights without
+automatically retrying a Worker.
 ```
 
 ## Phase Intent
@@ -201,3 +205,9 @@ Phase 24: Post-Run Evaluation Agent
 Add a separate Reviewer Agent. It reads completed durable Team Memory and human
 feedback, scores the run, writes review findings, and renders the review in the
 WebUI. It does not move through the maze or trigger retries yet.
+
+Phase 25: Human Review Gate
+
+Convert Reviewer output into a governed workflow decision. The learner can
+accept the review or request retry planning; the WebUI stores that decision in
+durable Team Memory and telemetry, but no retry is automatically executed.

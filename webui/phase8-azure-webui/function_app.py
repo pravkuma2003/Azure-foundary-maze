@@ -742,6 +742,8 @@ def build_split_trace(
             "review_threshold": reviewer_summary.get("review_threshold"),
             "review_status": reviewer_summary.get("review_status"),
             "review_findings": reviewer_summary.get("review_findings"),
+            "review_gate_status": team_memory.get("review.gate.status"),
+            "review_gate_decision": team_memory.get("review.gate.latest"),
             "next_phase": "Use agent quality telemetry to explain outcomes, path quality, memory freshness, and LLM budget.",
         },
     }
@@ -1449,6 +1451,109 @@ def record_feedback(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def build_review_gate_event(payload: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:
+    decision = str(payload.get("decision") or "").strip().lower()
+    if decision not in {"accepted", "retry_requested"}:
+        raise ValueError("decision must be accepted or retry_requested")
+    summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
+    return {
+        "event_name": "MazeReviewGate",
+        "phase": 25,
+        "gate_schema": "review_gate_v1",
+        "run_id": str(payload.get("run_id") or "").strip()[:256],
+        "decision": decision,
+        "review_status": str(review.get("overall_result") or review.get("status") or "unknown")[:80],
+        "review_score": int(review.get("score") or 0),
+        "review_threshold": int(review.get("threshold") or 90),
+        "retry_target": str(review.get("retry_target") or "none")[:120],
+        "human_gate": str(review.get("human_gate") or "unknown")[:120],
+        "worker_a_outcome": str(summary.get("worker_a_outcome") or "unknown")[:80],
+        "worker_b_outcome": str(summary.get("worker_b_outcome") or "unknown")[:80],
+        "created_at": utc_now(),
+    }
+
+
+def record_review_decision(payload: dict[str, Any]) -> dict[str, Any]:
+    run_id = str(payload.get("run_id") or "").strip()
+    if not run_id:
+        raise ValueError("run_id is required")
+    memory_store = build_team_memory_store(run_id)
+    memory = memory_store.snapshot()
+    review = memory.get("review.latest")
+    if not isinstance(review, dict):
+        review = payload.get("review") if isinstance(payload.get("review"), dict) else {}
+    if not review:
+        raise ValueError("review.latest is required before recording a gate decision")
+
+    event = build_review_gate_event(payload, review)
+    logging.info("MazeReviewGate %s", json.dumps(event, separators=(",", ":")))
+    existing = memory.get("review.gate.decisions")
+    decisions = existing if isinstance(existing, list) else []
+    decisions.append(event)
+    grouped_writes = memory_store.write_grouped(
+        [
+            (
+                "Azure WebUI Review Gate",
+                [
+                    {"key": "review.gate.latest", "value": event},
+                    {"key": "review.gate.status", "value": event["decision"]},
+                    {"key": "review.gate.decisions", "value": decisions},
+                ],
+            )
+        ]
+    )
+    team_memory = memory_store.snapshot()
+    analyst = stored_role_payload(team_memory, "_role.analyst", "analyst")
+    worker_a = stored_role_payload(team_memory, "_role.worker_a", "worker_a")
+    worker_b = stored_role_payload(team_memory, "_role.worker_b", "worker_b")
+    reviewer = stored_role_payload(team_memory, "_role.reviewer", "reviewer")
+    memory_events = [
+        {
+            "type": "review_gate",
+            "actor": "Azure WebUI Review Gate",
+            "target": event["retry_target"],
+            "label": event["decision"],
+            "detail": (
+                "Human accepted the Reviewer result."
+                if event["decision"] == "accepted"
+                else f"Human requested retry planning for {event['retry_target']}."
+            ),
+            "memory_scope": "shared",
+            "llm_call_count": 0,
+        },
+        {
+            "type": "memory",
+            "actor": "Azure WebUI Review Gate",
+            "target": "Team Memory",
+            "label": "persist gate decision",
+            "detail": f"Persisted {len(grouped_writes[0])} review-gate records.",
+            "memory_scope": "shared",
+            "llm_call_count": 0,
+        },
+    ]
+    trace = build_split_trace(
+        analyst,
+        worker_a,
+        worker_b,
+        team_memory,
+        memory_store,
+        memory_events,
+        reviewer=reviewer,
+        workflow_stage="review_gate_recorded",
+        phase_override=25,
+        phase_name_override="Human Review Gate",
+        concept_override="Evaluation-Gated Workflow",
+    )
+    return {
+        "status": "recorded",
+        "event_name": "MazeReviewGate",
+        "gate": event,
+        "app_insights_logged": True,
+        "team_memory_persisted": True,
+        "trace": trace,
+    }
+
+
 def json_response(payload: dict[str, Any], status_code: int = 200) -> func.HttpResponse:
     return func.HttpResponse(
         json.dumps(payload),
@@ -1514,6 +1619,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             return json_response({"source": "foundry-reviewer", "trace": call_reviewer_for_mission(str(run_id or ""))})
         except Exception as exc:
             return json_response({"source": "review-failed", "error": str(exc)}, status_code=502)
+    if req.method == "POST" and route == "api/review-decision":
+        try:
+            body = req.get_json()
+            payload = body if isinstance(body, dict) else {}
+            return json_response({"source": "maze-review-gate", **record_review_decision(payload)})
+        except Exception as exc:
+            return json_response({"source": "review-gate-failed", "error": str(exc)}, status_code=400)
     if req.method == "POST" and route == "api/run":
         try:
             source, trace = call_configured_agent_path()

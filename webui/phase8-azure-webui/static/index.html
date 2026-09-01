@@ -56,6 +56,8 @@
     .review-grid span { color:var(--muted); font-weight:800; }
     .finding { border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:8px; background:#fff; }
     .finding strong { display:block; }
+    .gate-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .gate-note { margin-top:8px; color:var(--muted); font-size:13px; font-weight:700; }
     @media (max-width:1050px) { .layout { grid-template-columns:1fr; } .mazes { grid-template-columns:1fr; } header { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -105,6 +107,7 @@
     let runTimer = null;
     let viewMode = 'learner';
     const feedbackState = {};
+    let reviewGateState = '';
 
     const stateEl = document.getElementById('state');
     const mazesEl = document.getElementById('mazes');
@@ -160,6 +163,7 @@
         return events.filter(event => {
           if (event.type === 'parallel_tick') return true;
           if (event.type === 'review') return true;
+          if (event.type === 'review_gate') return true;
           if (['state', 'plan', 'assignment', 'result'].includes(event.type) && !(event.actor || '').startsWith('Worker Agent')) return true;
           return false;
         });
@@ -258,6 +262,12 @@
       } : null;
     }
 
+    function latestReviewGate() {
+      const memory = trace?.team_memory || {};
+      const gate = memory['review.gate.latest'];
+      return gate && typeof gate === 'object' ? gate : null;
+    }
+
     function renderReview() {
       const review = latestReview();
       if (!review) {
@@ -266,10 +276,16 @@
         return;
       }
       const findings = Array.isArray(review.findings) ? review.findings : [];
+      const gate = latestReviewGate();
+      const runId = (trace?.summary || {}).team_memory_run_id || '';
+      const gateLabel = gate
+        ? `Gate decision recorded: ${gate.decision}`
+        : reviewGateState;
       reviewPanel.style.display = 'block';
       reviewContent.innerHTML = `
         <div class="review-grid">
-          <span>Score</span><strong>${escapeHtml(review.score)} / ${escapeHtml(review.threshold || 90)}</strong>
+          <span>Score</span><strong>${escapeHtml(review.score)} out of 100</strong>
+          <span>Threshold</span><strong>${escapeHtml(review.threshold || 90)}</strong>
           <span>Status</span><strong>${escapeHtml(review.overall_result || review.status || '-')}</strong>
           <span>Retry target</span><strong>${escapeHtml(review.retry_target || 'none')}</strong>
           <span>Human gate</span><strong>${escapeHtml(review.human_gate || '-')}</strong>
@@ -282,7 +298,16 @@
             <p>${escapeHtml(item.recommendation || '')}</p>
           </article>
         `).join('')}
+        <div class="gate-actions">
+          <button class="primary" type="button" id="acceptReviewBtn" ${runId ? '' : 'disabled'}>Accept Review</button>
+          <button type="button" id="requestRetryBtn" ${runId ? '' : 'disabled'}>Request Retry Planning</button>
+        </div>
+        <div class="gate-note">${escapeHtml(gateLabel)}</div>
       `;
+      const acceptBtn = document.getElementById('acceptReviewBtn');
+      const retryBtn = document.getElementById('requestRetryBtn');
+      if (acceptBtn) acceptBtn.onclick = () => submitReviewDecision('accepted');
+      if (retryBtn) retryBtn.onclick = () => submitReviewDecision('retry_requested');
     }
 
     function renderMazes() {
@@ -589,15 +614,47 @@
         const payload = await res.json();
         if (!res.ok) throw new Error(payload.error || 'review failed');
         trace = payload.trace;
+        reviewGateState = '';
         step = visibleEvents().length - 1;
         const summary = trace.summary || {};
-        statusEl.textContent = `Reviewer completed: score ${summary.review_score ?? '-'} / ${summary.review_threshold ?? 90}; status ${summary.review_status || '-'}.`;
+        statusEl.textContent = `Reviewer completed: score ${summary.review_score ?? '-'} out of 100; threshold ${summary.review_threshold ?? 90}; status ${summary.review_status || '-'}.`;
         render();
       } catch (error) {
         statusEl.textContent = error.name === 'AbortError'
           ? 'Reviewer timed out. Worker trace remains available.'
           : `Reviewer failed: ${error.message || error}`;
       }
+    }
+
+    async function submitReviewDecision(decision) {
+      if (!trace) return;
+      const review = latestReview();
+      const summary = trace.summary || {};
+      reviewGateState = 'Saving review gate decision...';
+      render();
+      try {
+        const res = await fetch('/api/review-decision', {
+          method:'POST',
+          cache:'no-store',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            run_id: summary.team_memory_run_id || '',
+            decision,
+            review,
+            summary
+          })
+        });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'review gate failed');
+        trace = payload.trace || trace;
+        reviewGateState = '';
+        step = visibleEvents().length - 1;
+        statusEl.textContent = `Review gate recorded: ${decision}.`;
+      } catch (error) {
+        reviewGateState = 'Review gate save failed';
+        statusEl.textContent = `Review gate failed: ${error.message || error}`;
+      }
+      render();
     }
 
     document.getElementById('prevBtn').onclick = () => { step = Math.max(0, step - 1); render(); };
